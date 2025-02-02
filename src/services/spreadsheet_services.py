@@ -1,9 +1,11 @@
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+from openpyxl import Workbook
 import re
 from src.constants.link_constants import SERVICE_ACCOUNT_FILE, SCOPES, SPREADSHEET_RANGE
 from src.constants.response_constants import EMPTY_LINK, INVALID_LINK, DATA_NOT_FOUND
 from src.middleware.response_handler_middleware import error_response, success_response
+from src.services.clustering_services import cluster_sentences
 
 
 def process_spreadsheet_link(link):
@@ -29,15 +31,25 @@ def process_spreadsheet_link(link):
         if not values:
             return error_response(DATA_NOT_FOUND)
 
-        # perform clustering or other processing here
+        # process the spreadsheet data into a list of sentences
+        # assuming each row contains a sentence in the first column
+        sentences = []
+        for row in values:
+            if row and isinstance(
+                row[0], str
+            ):  # check if row exists and first element is string
+                sentences.append(row[0])
 
-        # write the processed data back to the spreadsheet
-        write_to_spreadsheet(values, spreadsheet_id)
+        # perform clustering on processed sentences
+        clusters = cluster_sentences(sentences)
+
+        # TODO store clusters in a google sheet
 
     except Exception as e:
-        return error_response(f"Error fetching spreadsheet data: {str(e)}")
+        return error_response(f"Error processing spreadsheet data: {str(e)}")
 
-    return success_response(link, spreadsheet_id, values)
+    # return only link, spreadsheet_id, and clusters
+    return success_response(link, spreadsheet_id, clusters)
 
 
 def extract_spreadsheet_id(link):
@@ -74,28 +86,3 @@ def fetch_spreadsheet_data(spreadsheet_id, range_name):
         sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
     )
     return result.get("values", [])
-
-
-def write_to_spreadsheet(values, spreadsheet_id):
-    """
-    Writes processed data back to the specified Google Sheet.
-
-    Args:
-        values (list): The data to be written to the spreadsheet.
-        spreadsheet_id (str): The ID of the Google Spreadsheet.
-    """
-    creds = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES
-    )
-    service = build("sheets", "v4", credentials=creds)
-    sheet = service.spreadsheets()
-    (
-        sheet.values()
-        .update(
-            spreadsheetId=spreadsheet_id,
-            range="Sheet1!A1",  # you can dynamically set the range if needed
-            valueInputOption="USER_ENTERED",
-            body={"values": values},
-        )
-        .execute()
-    )

@@ -10,8 +10,6 @@ spreadsheet_link = api.model(
 
 
 class Link(Resource):
-    def get(self):
-        return {"status": "OK", "message": "hi from link"}
 
     @api.expect(spreadsheet_link)
     def post(self):

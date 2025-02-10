@@ -1,8 +1,8 @@
 from flask import Blueprint
 from flask_restx import Api
 
-from src.routes.common_routes import api as common_ns
-from src.routes.link_routes import api as link_ns
+from routes.health_routes import api as health_ns
+from routes.spreadsheet_clustering_routes import api as spreadsheet_clustering_ns
 
 api_bp = Blueprint("api", __name__)
 
@@ -13,5 +13,5 @@ api = Api(
     description="A REST API build with Flask",
 )
 
-api.add_namespace(common_ns)
-api.add_namespace(link_ns)
+api.add_namespace(health_ns)
+api.add_namespace(spreadsheet_clustering_ns)

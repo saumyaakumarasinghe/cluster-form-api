@@ -23,7 +23,6 @@ class Link(Resource):
         clustering_service = ClusteringService()
         data_prep_service = DataPreparationService()
 
-        # call controller
         response, status_code = cluster_spreadsheet(
             link, spreadsheet_service, clustering_service, data_prep_service
         )

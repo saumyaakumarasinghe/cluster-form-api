@@ -19,34 +19,22 @@ class SpreadsheetService:
         match = re.search(r"/d/([a-zA-Z0-9-_]+)", link)
         return match.group(1) if match else None
 
-    # def fetch_spreadsheet_data(self, spreadsheet_id: str, range_name: str) -> List[List[Any]]:
-    #     """Fetch raw data from Google Sheets"""
-    #     try:
-    #         sheet = self.service.spreadsheets()
-    #         result = sheet.values().get(
-    #             spreadsheetId=spreadsheet_id,
-    #             range=range_name
-    #         ).execute()
-    #         return result.get("values", [])
-    #     except Exception as e:
-    #         raise Exception(f"Error fetching spreadsheet data: {str(e)}")
-
     def fetch_spreadsheet_data(
         self, spreadsheet_id: str, range_name: str
     ) -> List[List[str]]:
         try:
-            # First, get the sheet names
+            # first, get the sheet names
             sheet_metadata = (
                 self.service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
             )
             sheets = sheet_metadata.get("sheets", [])
 
-            # If there's only one sheet, use it directly
+            # if there's only one sheet, use it directly
             if len(sheets) == 1:
                 sheet_name = sheets[0]["properties"]["title"]
                 full_range = f"'{sheet_name}'!{range_name}"
             else:
-                # If multiple sheets, try the range as is first
+                # if multiple sheets, try the range as is first
                 full_range = range_name
 
             result = (
@@ -61,7 +49,7 @@ class SpreadsheetService:
 
         except Exception as e:
             if "Invalid range" in str(e):
-                # Try without sheet name if that fails
+                # try without sheet name if that fails
                 try:
                     result = (
                         self.service.spreadsheets()
@@ -76,15 +64,12 @@ class SpreadsheetService:
                     )
             raise e
 
-    def convert_to_dataframe(self, data: List[List[Any]]) -> pd.DataFrame:
-        """Convert sheet data to pandas DataFrame"""
+    def convert_to_dataframe(
+        self, data: List[List[Any]], column_name: str
+    ) -> pd.DataFrame:
+        """Convert sheet data to pandas DataFrame and prepare a single column for clustering"""
         if not data:
             raise ValueError("No data found in spreadsheet")
 
-        # If there's only one column, handle it specially
-        if all(len(row) <= 1 for row in data):
-            return pd.DataFrame(data, columns=["Value"])
-
-        # For multiple columns, use first row as header if it exists
-        df = pd.DataFrame(data[1:], columns=data[0] if data else ["Value"])
-        return df
+        # handle column by directly using the provided column_name
+        return pd.DataFrame(data, columns=[column_name])

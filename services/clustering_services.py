@@ -1,5 +1,3 @@
-from .data_preparation_service import DataPreparationService
-from .spreadsheet_services import SpreadsheetService
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler
 import numpy as np
@@ -12,16 +10,16 @@ from sklearn.neighbors import NearestNeighbors
 def convert_numpy_to_native(data):
     """Recursively convert numpy types (int64, float64) to native Python types."""
     if isinstance(data, np.ndarray):
-        return data.tolist()  # Convert numpy array to list
+        return data.tolist()  # convert numpy array to list
     elif isinstance(data, (np.int64, np.int32)):
-        return int(data)  # Convert numpy int to native int
+        return int(data)  # convert numpy int to native int
     elif isinstance(data, (np.float64, np.float32)):
-        return float(data)  # Convert numpy float to native float
+        return float(data)  # convert numpy float to native float
     elif isinstance(data, dict):
         return {key: convert_numpy_to_native(value) for key, value in data.items()}
     elif isinstance(data, list):
         return [convert_numpy_to_native(item) for item in data]
-    return data  # Return the data as is if it's not a numpy type
+    return data  # return the data as is if it's not a numpy type
 
 
 class ClusteringService:
@@ -32,17 +30,17 @@ class ClusteringService:
         """Preprocess list data for clustering."""
         series_data = pd.Series(data)
         valid_mask = series_data.notna() & (series_data != "")
-        print(f"Valid mask count: {valid_mask.sum()}")  # Debugging line
+        print(f"Valid mask count: {valid_mask.sum()}")
 
-        # Convert text data to numerical features using TF-IDF
+        # convert text data to numerical features using TF-IDF
         tfidf = TfidfVectorizer()
         text_data = series_data[valid_mask].values
         tfidf_matrix = tfidf.fit_transform(text_data)
 
-        print(f"TF-IDF matrix shape: {tfidf_matrix.shape}")  # Debugging line
+        print(f"TF-IDF matrix shape: {tfidf_matrix.shape}")
 
-        clean_data = tfidf_matrix.toarray()  # Convert sparse matrix to dense array
-        print(f"Clean data count: {len(clean_data)}")  # Debugging line
+        clean_data = tfidf_matrix.toarray()  # convert sparse matrix to dense array
+        print(f"Clean data count: {len(clean_data)}")
 
         if len(clean_data) >= 2:
             clean_data = self.scaler.fit_transform(clean_data)
@@ -74,10 +72,10 @@ class ClusteringService:
     def cluster_sentences(self, data: List[Any]) -> Dict[str, Any]:
         """Perform clustering on list data with proper JSON serialization."""
         try:
-            # Get data quality metrics
+            # get data quality metrics
             quality_metrics = self._get_data_quality_metrics(data)
 
-            # Preprocess data
+            # preprocess data
             clean_data, valid_mask = self._preprocess_data(data)
 
             if len(clean_data) < 2:
@@ -89,31 +87,31 @@ class ClusteringService:
                     }
                 )
 
-            # Estimate DBSCAN parameters
+            # estimate DBSCAN parameters
             params = self._estimate_dbscan_params(clean_data)
 
-            # Perform clustering
+            # perform clustering
             dbscan = DBSCAN(eps=params["eps"], min_samples=params["min_samples"])
             clusters = dbscan.fit_predict(clean_data)
 
-            # Create a list of cluster assignments with -1 for invalid data
-            all_clusters = [-1] * len(data)  # Initialize all as noise points
+            # create a list of cluster assignments with -1 for invalid data
+            all_clusters = [-1] * len(data)  # initialize all as noise points
             valid_indices = np.where(valid_mask)[0]
             for idx, cluster in zip(valid_indices, clusters):
-                all_clusters[idx] = int(cluster)  # Convert numpy.int64 to Python int
+                all_clusters[idx] = int(cluster)  # convert numpy.int64 to Python int
 
-            # Group sentences by cluster label
+            # group sentences by cluster label
             cluster_sentences = {}
             for idx, cluster in zip(valid_indices, clusters):
-                if cluster != -1:  # Ignore noise points
+                if cluster != -1:  # ignore noise points
                     if cluster not in cluster_sentences:
                         cluster_sentences[cluster] = []
                     cluster_sentences[cluster].append(data[idx])
 
-            # Convert numpy.int64 keys to Python int for JSON serialization
+            # convert numpy.int64 keys to Python int for JSON serialization
             cluster_sentences = {int(k): v for k, v in cluster_sentences.items()}
 
-            # Calculate cluster statistics
+            # calculate cluster statistics
             cluster_stats = {}
             for cluster_id in set(clusters):
                 if cluster_id != -1:
@@ -128,14 +126,14 @@ class ClusteringService:
                         "max": float(np.max(clean_data[mask])),
                     }
 
-            # Convert all numpy numbers to Python native types
+            # convert all numpy numbers to Python native types
             clustering_results = {
                 "clusters": convert_numpy_to_native(
                     all_clusters
-                ),  # Convert all cluster IDs to Python int
+                ),  # convert all cluster IDs to Python int
                 "cluster_sentences": convert_numpy_to_native(
                     cluster_sentences
-                ),  # Add sentences by cluster
+                ),  # add sentences by cluster
                 "cluster_stats": convert_numpy_to_native(cluster_stats),
                 "data_quality": convert_numpy_to_native(quality_metrics),
                 "parameters_used": convert_numpy_to_native(params),

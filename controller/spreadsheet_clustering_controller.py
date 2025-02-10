@@ -26,25 +26,27 @@ def cluster_spreadsheet(
             return error_response(INVALID_LINK)
 
         try:
-            # Fetch data with flexible range handling
+            # fetch data with flexible range handling
             spreadsheet_data = spreadsheet_service.fetch_spreadsheet_data(
                 spreadsheet_id, SPREADSHEET_RANGE
             )
             if not spreadsheet_data:
                 return error_response(DATA_NOT_FOUND)
 
-            # Convert to DataFrame
-            df = spreadsheet_service.convert_to_dataframe(spreadsheet_data)
+            # convert to dataFrame
+            df = spreadsheet_service.convert_to_dataframe(
+                spreadsheet_data, SPREADSHEET_RANGE
+            )
 
-            # Get the actual column name or index we're working with
+            # get the actual column name or index we're working with
             target_column = df.columns[0] if len(df.columns) > 0 else "Value"
 
-            # Prepare data using the correct column
+            # prepare data using the correct column
             prepared_df = data_prep_service.prepare_column_for_clustering(
                 df, target_column
             )
 
-            # Convert the column to a list before passing to clustering service
+            # convert the column to a list before passing to clustering service
             clusters = clustering_service.cluster_sentences(
                 prepared_df[target_column].tolist()
             )

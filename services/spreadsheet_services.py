@@ -2,7 +2,10 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import pandas as pd
 import re
-from typing import List, Dict, Any, Optional
+from typing import Tuple
+from googleapiclient.errors import HttpError
+
+from typing import List, Any, Optional
 from constants.link_constants import SERVICE_ACCOUNT_FILE, SCOPES
 
 
@@ -23,7 +26,12 @@ class SpreadsheetService:
         self, spreadsheet_id: str, range_name: str
     ) -> List[List[str]]:
         try:
-            # first, get the sheet names
+            # First check permissions
+            has_permission, error_message = self._check_permissions(spreadsheet_id)
+            if not has_permission:
+                raise PermissionError(f"Permission denied. {error_message}. ")
+            
+            # get the sheet names
             sheet_metadata = (
                 self.service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
             )
@@ -73,3 +81,19 @@ class SpreadsheetService:
 
         # handle column by directly using the provided column_name
         return pd.DataFrame(data, columns=[column_name])
+
+    def _check_permissions(self, spreadsheet_id: str) -> Tuple[bool, str]:
+        """
+        Check if the service account has required permissions
+        """
+        try:
+            # Try to get minimal metadata to check permissions
+            self.service.spreadsheets().get(
+                spreadsheetId=spreadsheet_id,
+                fields='spreadsheetId'
+            ).execute()
+            return True, ""
+        except HttpError as e:
+            if e.resp.status == 403:
+                return False, "You need to share the spreadsheet with the service account email or make it public"
+            return False, str(e)

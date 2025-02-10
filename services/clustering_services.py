@@ -60,20 +60,25 @@ class ClusteringService:
             min_samples = 4
         return {"eps": eps, "min_samples": min_samples}
 
-    def _get_data_quality_metrics(self, data: List[Any]) -> Dict[str, int]:
-        """Calculate data quality metrics from list data."""
+    def _get_data_quality_metrics(
+        self, data_quality_metrics, data: List[Any]
+    ) -> Dict[str, int]:
         series_data = pd.Series(data)
+        total_records = len(series_data)
+
         return {
-            "total_records": len(series_data),
-            "null_count": series_data.isna().sum(),
-            "empty_string_count": series_data.astype(str).str.strip().eq("").sum(),
+            "total_records": total_records,
+            "null_count": data_quality_metrics["null_count"],
+            "empty_count": data_quality_metrics["empty_count"],
         }
 
-    def cluster_sentences(self, data: List[Any]) -> Dict[str, Any]:
+    def cluster_sentences(
+        self, data: List[Any], data_quality_metrics
+    ) -> Dict[str, Any]:
         """Perform clustering on list data with proper JSON serialization."""
         try:
             # get data quality metrics
-            quality_metrics = self._get_data_quality_metrics(data)
+            quality_metrics = self._get_data_quality_metrics(data_quality_metrics, data)
 
             # preprocess data
             clean_data, valid_mask = self._preprocess_data(data)

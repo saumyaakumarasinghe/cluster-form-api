@@ -42,18 +42,19 @@ def cluster_spreadsheet(
             target_column = df.columns[0] if len(df.columns) > 0 else "Value"
 
             # prepare data using the correct column
-            prepared_df = data_prep_service.prepare_column_for_clustering(
-                df, target_column
+            prepared_df, data_quality_metrics = (
+                data_prep_service.prepare_column_for_clustering(df, target_column)
             )
 
             # convert the column to a list before passing to clustering service
             clusters = clustering_service.cluster_sentences(
-                prepared_df[target_column].tolist()
+                prepared_df[target_column].tolist(), data_quality_metrics
             )
 
             print(f"Spreadsheet link: {str(link)}")
             print(f"Spreadsheet ID: {str(spreadsheet_id)}")
-            print(f"Defined clusters: {str(clusters)}")
+            print(f"Spreadsheet column: {str(SPREADSHEET_RANGE)}")
+            # print(f"Defined clusters: {str(clusters)}")
 
             return success_response(clusters)
 

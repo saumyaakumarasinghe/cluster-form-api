@@ -6,14 +6,14 @@ from services.clustering_services import ClusteringService
 from services.data_preparation_service import DataPreparationService
 
 
-api = Namespace("link", description="Link operations")
+api = Namespace("spreadsheet", description="Spreadsheet operations")
 
 spreadsheet_link = api.model(
     "link", {"link": fields.String(required=True, description="link string")}
 )
 
 
-class Link(Resource):
+class Cluster(Resource):
 
     @api.expect(spreadsheet_link)
     def post(self):
@@ -30,4 +30,4 @@ class Link(Resource):
         return response, status_code
 
 
-api.add_resource(Link, "")
+api.add_resource(Cluster, "/clustering")

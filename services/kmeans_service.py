@@ -242,7 +242,7 @@ class KClusteringService:
         for cluster, details in cluster_summary.items():
             print(f"\n✦ Cluster {cluster}:")
             print(f"  • Total Entries: {details['size']}")
-            print("  • Sample Feedbacks:")
+            print("  • Sample Feedbacks: ")
             for i, feedback in enumerate(details['feedbacks'][:details['sample_size']], 1):
                 print(f"    {i}. {feedback}")
 
@@ -255,18 +255,7 @@ class KClusteringService:
             'labels': labels
         }
 
-# # Example usage
-# restaurant_feedback = [
-#     "It was delicious", 
-#     "bad", 
-#     "VERY bad but i ate it", 
-#     "Pretty good", 
-#     "woow yummy", 
-#     "It was good I ate a salad", 
-#     "Maybe good but not best", 
-#     "I ate a mix rice for today lunch. It was ok", 
-#     "Pasta made my life better with cheese and mayo"
-# ]
-
-# # Run advanced clustering
-# results = KClusteringService.advanced_clustering(restaurant_feedback)
+# The function would then be called in your route handler
+def advanced_clustering_handler(feedback_list):
+    results = KClusteringService.advanced_clustering(feedback_list)
+    return results

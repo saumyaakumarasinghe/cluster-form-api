@@ -5,7 +5,7 @@ from services.spreadsheet_services import SpreadsheetService
 # from services.clustering_services import ClusteringService
 from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
-
+import numpy as np
 
 def cluster_spreadsheet(
     link: str,
@@ -49,20 +49,35 @@ def cluster_spreadsheet(
             )
 
             # convert the column to a list before passing to clustering service
-            # clusters = clustering_service.cluster_sentences(
-            #     prepared_df[target_column].tolist(), data_quality_metrics
-            # )
             print(f"DATA-------: {prepared_df[target_column].tolist()}")
-            clusters = kclustering_service.advanced_clustering(
+            print(f"DATA-------: {data_quality_metrics}")
+            clustering_results = kclustering_service.advanced_clustering(
                 prepared_df[target_column].tolist()
             )
 
             print(f"Spreadsheet link: {str(link)}")
             print(f"Spreadsheet ID: {str(spreadsheet_id)}")
             print(f"Spreadsheet column: {str(SPREADSHEET_RANGE)}")
-            print(f"Defined clusters---------------------: {str(clusters)}")
 
-            return success_response("clusters")
+            # Convert any numpy.int64 to native Python int for JSON serialization
+            optimal_clusters = int(clustering_results['optimal_clusters']) if isinstance(clustering_results['optimal_clusters'], np.int64) else clustering_results['optimal_clusters']
+            silhouette_score = float(clustering_results['silhouette_score']) if isinstance(clustering_results['silhouette_score'], np.int64) else clustering_results['silhouette_score']
+            calinski_score = float(clustering_results['calinski_score']) if isinstance(clustering_results['calinski_score'], np.int64) else clustering_results['calinski_score']
+            davies_score = float(clustering_results['davies_score']) if isinstance(clustering_results['davies_score'], np.int64) else clustering_results['davies_score']
+
+            # If cluster_summary has numpy.int64 values, convert them as well
+            cluster_summary = {key: [int(item) if isinstance(item, np.int64) else item for item in value] for key, value in clustering_results['cluster_summary'].items()}
+
+            # Send the clusters in the response
+            return success_response({
+                "message": "Clustering operation completed successfully.",
+                "optimal_clusters": optimal_clusters,
+                "silhouette_score": silhouette_score,
+                "calinski_score": calinski_score,
+                "davies_score": davies_score,
+                "cluster_summary": cluster_summary,
+            })
+
 
         except Exception as e:
             return error_response(f"Error accessing spreadsheet data: {str(e)}")

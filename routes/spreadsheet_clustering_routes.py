@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource, fields
 from flask import request
 from controller.spreadsheet_clustering_controller import cluster_spreadsheet
 from services.spreadsheet_services import SpreadsheetService
-from services.clustering_services import ClusteringService
+from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
 
 
@@ -20,7 +20,7 @@ class Cluster(Resource):
         data = request.get_json()
         link = data.get("link")
         spreadsheet_service = SpreadsheetService()
-        clustering_service = ClusteringService()
+        clustering_service = KClusteringService()
         data_prep_service = DataPreparationService()
 
         response, status_code = cluster_spreadsheet(

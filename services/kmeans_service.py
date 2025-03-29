@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")  # Use a non-GUI backend
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -128,7 +131,7 @@ class KClusteringService:
         plt.show()
 
     @staticmethod
-    def advanced_clustering(self, feedback_list):
+    def advanced_clustering(feedback_list):
         """
         Perform advanced text clustering with comprehensive analysis
         

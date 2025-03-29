@@ -52,6 +52,7 @@ def cluster_spreadsheet(
             # clusters = clustering_service.cluster_sentences(
             #     prepared_df[target_column].tolist(), data_quality_metrics
             # )
+            print(f"DATA-------: {prepared_df[target_column].tolist()}")
             clusters = kclustering_service.advanced_clustering(
                 prepared_df[target_column].tolist()
             )

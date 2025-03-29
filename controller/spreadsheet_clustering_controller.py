@@ -2,14 +2,16 @@ from middleware.response_handler_middleware import error_response, success_respo
 from constants.response_constants import EMPTY_LINK, INVALID_LINK, DATA_NOT_FOUND
 from constants.link_constants import SPREADSHEET_RANGE
 from services.spreadsheet_services import SpreadsheetService
-from services.clustering_services import ClusteringService
+# from services.clustering_services import ClusteringService
+from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
 
 
 def cluster_spreadsheet(
     link: str,
     spreadsheet_service: SpreadsheetService,
-    clustering_service: ClusteringService,
+    # clustering_service: ClusteringService,
+    kclustering_service: KClusteringService,
     data_prep_service: DataPreparationService,
 ):
     try:
@@ -47,16 +49,19 @@ def cluster_spreadsheet(
             )
 
             # convert the column to a list before passing to clustering service
-            clusters = clustering_service.cluster_sentences(
-                prepared_df[target_column].tolist(), data_quality_metrics
+            # clusters = clustering_service.cluster_sentences(
+            #     prepared_df[target_column].tolist(), data_quality_metrics
+            # )
+            clusters = kclustering_service.advanced_clustering(
+                prepared_df[target_column].tolist()
             )
 
             print(f"Spreadsheet link: {str(link)}")
             print(f"Spreadsheet ID: {str(spreadsheet_id)}")
             print(f"Spreadsheet column: {str(SPREADSHEET_RANGE)}")
-            # print(f"Defined clusters: {str(clusters)}")
+            print(f"Defined clusters---------------------: {str(clusters)}")
 
-            return success_response(clusters)
+            return success_response("clusters")
 
         except Exception as e:
             return error_response(f"Error accessing spreadsheet data: {str(e)}")

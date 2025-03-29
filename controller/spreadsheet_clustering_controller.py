@@ -68,16 +68,17 @@ def cluster_spreadsheet(
             # If cluster_summary has numpy.int64 values, convert them as well
             cluster_summary = {key: [int(item) if isinstance(item, np.int64) else item for item in value] for key, value in clustering_results['cluster_summary'].items()}
 
-            # Send the clusters in the response
-            return success_response({
-                "message": "Clustering operation completed successfully.",
-                "optimal_clusters": optimal_clusters,
-                "silhouette_score": silhouette_score,
-                "calinski_score": calinski_score,
-                "davies_score": davies_score,
-                "cluster_summary": cluster_summary,
-            })
+            # # Send the clusters in the response
+            # return success_response({
+            #     "message": "Clustering operation completed successfully.",
+            #     "optimal_clusters": optimal_clusters,
+            #     "silhouette_score": silhouette_score,
+            #     "calinski_score": calinski_score,
+            #     "davies_score": davies_score,
+            #     "cluster_summary": cluster_summary,
+            # })
 
+            return success_response({"link": 'https://docs.google.com/spreadsheets/d/1E381M970KJ1h-QfWBwOdiNQOxaRq0HGtAOba-ngwBJE/edit?resourcekey&usp=forms_web_b&urp=linked#gid=1423788549'})
 
         except Exception as e:
             return error_response(f"Error accessing spreadsheet data: {str(e)}")

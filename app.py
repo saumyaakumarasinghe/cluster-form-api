@@ -1,8 +1,10 @@
 from flask import Flask
+from flask_cors import CORS
 
 
 def create_app(script_info=None):
     app = Flask(__name__)
+    CORS(app) # Enable CORS for all routes
     app.config.from_object("config.DevelopmentConfig")
 
     from routes import api_bp

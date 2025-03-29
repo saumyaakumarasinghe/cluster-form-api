@@ -18,6 +18,8 @@ class Cluster(Resource):
     @api.expect(spreadsheet_link)
     def post(self):
         data = request.get_json()
+        print(f"Request body: {data}")        
+
         link = data.get("link")
         spreadsheet_service = SpreadsheetService()
         clustering_service = KClusteringService()

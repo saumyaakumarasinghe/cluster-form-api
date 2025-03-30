@@ -1,16 +1,17 @@
 from flask_restx import Namespace, Resource, fields
 from flask import request
-from controller.spreadsheet_clustering_controller import cluster_spreadsheet
+from controller.clustering_controller import cluster_form
 from services.spreadsheet_services import SpreadsheetService
 from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
 from services.image_service import ImageService
 
 
-api = Namespace("spreadsheet", description="Spreadsheet operations")
+api = Namespace("form", description="Form operations")
 
 spreadsheet_link = api.model(
-    "link", {"link": fields.String(required=True, description="link string")}
+    "link", {"link": fields.String(required=True, description="link string")},
+    "column", {"link": fields.String(required=True, description="column string")}
 )
 
 
@@ -28,7 +29,7 @@ class Cluster(Resource):
         data_prep_service = DataPreparationService()
         image_service = ImageService()
 
-        response, status_code = cluster_spreadsheet(
+        response, status_code = cluster_form(
             link,
             column,
             spreadsheet_service,

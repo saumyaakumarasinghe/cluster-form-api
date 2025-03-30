@@ -3,8 +3,6 @@ import matplotlib
 
 matplotlib.use("Agg")  # Use a non-GUI backend
 
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from sklearn.metrics import (
@@ -12,7 +10,7 @@ from sklearn.metrics import (
     calinski_harabasz_score,
     davies_bouldin_score,
 )
-from middleware.response_handler_middleware import error_response, success_response
+from middleware.response_handler_middleware import error_response
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from constants.response_constants import EMPTY_FEEDBACK_LIST

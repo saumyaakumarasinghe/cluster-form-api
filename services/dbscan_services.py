@@ -26,7 +26,7 @@ class ClusteringService:
     def __init__(self):
         self.scaler = StandardScaler()
 
-    def _preprocess_data(self, data: List[Any]) -> Tuple[np.ndarray, np.ndarray]:
+    def preprocess_data(self, data: List[Any]) -> Tuple[np.ndarray, np.ndarray]:
         """Preprocess list data for clustering."""
         series_data = pd.Series(data)
         valid_mask = series_data.notna() & (series_data != "")
@@ -46,7 +46,7 @@ class ClusteringService:
             clean_data = self.scaler.fit_transform(clean_data)
         return clean_data, valid_mask
 
-    def _estimate_dbscan_params(self, data: np.ndarray) -> Dict[str, float]:
+    def estimate_dbscan_params(self, data: np.ndarray) -> Dict[str, float]:
         """Estimate optimal DBSCAN parameters."""
         n_neighbors = min(len(data) - 1, 5)
         nbrs = NearestNeighbors(n_neighbors=n_neighbors).fit(data)
@@ -60,7 +60,7 @@ class ClusteringService:
             min_samples = 4
         return {"eps": eps, "min_samples": min_samples}
 
-    def _get_data_quality_metrics(
+    def get_data_quality_metrics(
         self, data_quality_metrics, data: List[Any]
     ) -> Dict[str, int]:
         series_data = pd.Series(data)

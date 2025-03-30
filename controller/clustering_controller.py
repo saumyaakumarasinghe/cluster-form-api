@@ -9,10 +9,9 @@ from services.spreadsheet_services import SpreadsheetService
 from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
 from services.image_service import ImageService
-import numpy as np
 
 
-def cluster_spreadsheet(
+def cluster_form(
     link: str,
     column: str,
     spreadsheet_service: SpreadsheetService,
@@ -105,9 +104,6 @@ def cluster_spreadsheet(
             # Add visualization if available
             if visualization_base64:
                 try:
-                    image_service = (
-                        ImageService()
-                    )  # Make sure this is instantiated before use
                     shortened_base64, full_base64 = (
                         image_service.compressed_image_from_base64(visualization_base64)
                     )

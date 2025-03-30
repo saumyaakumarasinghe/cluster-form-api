@@ -84,7 +84,7 @@ class KClusteringService:
         # Create a smaller figure with reduced size
         fig, axes = plt.subplots(2, 2, figsize=(8, 6))  # Reduced the figsize
         fig.suptitle(
-            "Clustering Analysis Visualization", fontsize=12, fontweight="bold"
+            "Clustering Analysis Visualization", fontsize=24, fontweight="bold"
         )
 
         # 1. Pie chart of cluster distribution (Left side)
@@ -95,17 +95,23 @@ class KClusteringService:
             autopct="%1.1f%%",
             startangle=90,
             colors=sns.color_palette("pastel", optimal_k),
+            textprops={"fontweight": "bold"},
         )
-        axes[0, 0].set_title("Cluster Distribution")
+        axes[0, 0].set_title("Cluster Distribution", fontsize=20, fontweight="bold")
         axes[0, 0].axis("off")  # Hide axes for the pie chart
 
         # 2. Cluster Size Distribution (Right side)
         axes[0, 1].bar(
-            range(optimal_k), cluster_sizes, color="skyblue", edgecolor="navy"
+            range(optimal_k),
+            cluster_sizes,
+            color="skyblue",
+            edgecolor="navy",
         )
-        axes[0, 1].set_title("Cluster Size Distribution")
-        axes[0, 1].set_xlabel("Cluster Number")
-        axes[0, 1].set_ylabel("Number of Entries")
+        axes[0, 1].set_title(
+            "Cluster Size Distribution", fontsize=20, fontweight="bold"
+        )
+        axes[0, 1].set_xlabel("Cluster Number", fontsize=15, fontweight="bold")
+        axes[0, 1].set_ylabel("Number of Entries", fontsize=15, fontweight="bold")
 
         # 3. Brief text info panel (Center of bottom row)
         axes[1, 0].axis("off")  # Hide axes for the info panel
@@ -127,6 +133,8 @@ class KClusteringService:
             verticalalignment="center",
             transform=axes[1, 0].transAxes,
             bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.8),
+            fontsize=14,
+            fontweight="bold",
         )
 
         plt.tight_layout()

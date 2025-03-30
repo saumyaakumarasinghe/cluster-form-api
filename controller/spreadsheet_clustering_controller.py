@@ -104,9 +104,22 @@ def cluster_spreadsheet(
 
             # Add visualization if available
             if visualization_base64:
-                response_data["visualization"] = (
-                    f"data:image/png;base64,{visualization_base64}"
-                )
+                try:
+                    image_service = (
+                        ImageService()
+                    )  # Make sure this is instantiated before use
+                    shortened_base64, full_base64 = (
+                        image_service.compressed_image_from_base64(visualization_base64)
+                    )
+                    if full_base64:  # Check if the conversion was successful
+                        response_data["visualization"] = (
+                            full_base64  # Use the full base64 string, not shortened
+                        )
+                        print(f"Visualization added. Preview: {shortened_base64}")
+                    else:
+                        print("Failed to process visualization image")
+                except Exception as e:
+                    print(f"Error adding visualization: {e}")
 
             return success_response(response_data)
 

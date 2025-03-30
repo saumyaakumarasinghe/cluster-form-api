@@ -2,7 +2,7 @@ from flask import Blueprint
 from flask_restx import Api
 
 from routes.health_routes import api as health_ns
-from routes.clustering_routes import api as clustering_ns
+from routes.form_clustering_routes import api as form_clustering_ns
 
 api_bp = Blueprint("api", __name__)
 
@@ -14,4 +14,4 @@ api = Api(
 )
 
 api.add_namespace(health_ns)
-api.add_namespace(clustering_ns)
+api.add_namespace(form_clustering_ns)

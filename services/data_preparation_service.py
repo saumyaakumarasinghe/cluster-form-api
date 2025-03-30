@@ -17,7 +17,7 @@ class DataPreparationService:
                     f"Column '{column_name}' does not exist in the dataset"
                 )
 
-            # cCreate a copy of the dataframe to avoid modifying the original dataframe
+            # Create a copy of the dataframe to avoid modifying the original dataframe
             prepared_df = df.copy()
 
             # normalize multi-line entries (replace newlines with spaces)
@@ -37,6 +37,7 @@ class DataPreparationService:
             # track the number of null and empty values for the specific column before cleaning
             null_count = prepared_df[column_name].isna().sum()
             empty_count = (prepared_df[column_name].str.len() == 0).sum()
+            print("\n" + "=" * 50)
             print(f"Null count (before cleaning): {str(null_count)}")
             print(f"Empty count (before cleaning): {str(empty_count)}")
 
@@ -53,13 +54,8 @@ class DataPreparationService:
             print(f"Null count (after cleaning): {str(null_count_after)}")
             print(f"Empty count (after cleaning): {str(empty_count_after)}")
 
-            data_quality_metrics = {
-                "null_count": null_count,
-                "empty_count": empty_count,
-            }
-
             # return the cleaned dataframe
-            return prepared_df, data_quality_metrics
+            return prepared_df
 
         except Exception as e:
             raise ValueError(f"Error preparing data: {str(e)}")

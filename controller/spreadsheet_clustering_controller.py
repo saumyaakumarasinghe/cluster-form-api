@@ -58,7 +58,7 @@ def cluster_spreadsheet(
 
             # Convert the column to a list before passing to clustering service
             feedback_list = prepared_df[target_column].tolist()
-            print(f"Feedback list: {feedback_list}")
+            # TODO remove 1st elements from the arr
 
             # Perform clustering
             clustering_results = kclustering_service.advanced_clustering(feedback_list)
@@ -107,12 +107,6 @@ def cluster_spreadsheet(
                 response_data["visualization"] = (
                     f"data:image/png;base64,{visualization_base64}"
                 )
-
-            # Include basic metrics for logging/debugging
-            print(
-                f"Clustering completed with {response_data['optimal_clusters']} clusters"
-            )
-            print(f"Results spreadsheet: {response_data['link']}")
 
             return success_response(response_data)
 

@@ -37,6 +37,7 @@ class DataPreparationService:
             # track the number of null and empty values for the specific column before cleaning
             null_count = prepared_df[column_name].isna().sum()
             empty_count = (prepared_df[column_name].str.len() == 0).sum()
+            print("\n" + "=" * 50)
             print(f"Null count (before cleaning): {str(null_count)}")
             print(f"Empty count (before cleaning): {str(empty_count)}")
 

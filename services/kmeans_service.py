@@ -307,22 +307,10 @@ class KClusteringService:
 
             # Detailed console output
             print("\n" + "=" * 50)
-
-            print("\n📊 CLUSTERING METRICS:")
-            print(f"• Optimal Number of Clusters: {optimal_k}")
-            print(f"• Average Silhouette Score: {silhouette_avg:.4f}")
-            print(f"• Calinski-Harabasz Score: {calinski_score:.4f}")
-            print(f"• Davies-Bouldin Score: {davies_score:.4f}")
-
-            print("\n🧩 CLUSTER BREAKDOWN:")
-            for cluster, details in cluster_summary.items():
-                print(f"\n✦ Cluster {cluster}:")
-                print(f"  • Total Entries: {details['size']}")
-                print("  • Sample Feedbacks: ")
-                for i, feedback in enumerate(
-                    details["feedbacks"][: details["sample_size"]], 1
-                ):
-                    print(f"    {i}. {feedback}")
+            print(f"> Optimal Number of Clusters: {optimal_k}")
+            print(f"> Average Silhouette Score: {silhouette_avg:.4f}")
+            print(f"> Calinski-Harabasz Score: {calinski_score:.4f}")
+            print(f"> Davies-Bouldin Score: {davies_score:.4f}")
 
             # Prepare feature importance for each cluster if needed
             feature_importance = {}

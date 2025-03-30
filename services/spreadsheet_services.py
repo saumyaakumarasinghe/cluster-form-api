@@ -121,11 +121,6 @@ class SpreadsheetService:
                     body={"values": values},
                 ).execute()
 
-                print(f"Spreadsheet ID: {spreadsheet_id}")  # Ensure it's not None
-                print(
-                    f"Spreadsheet Link: https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit"
-                )
-
             return f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit"
         except Exception as e:
             raise Exception(f"Error creating cluster sheets: {str(e)}")

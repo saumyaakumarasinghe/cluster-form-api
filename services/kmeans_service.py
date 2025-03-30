@@ -12,9 +12,11 @@ from sklearn.metrics import (
     calinski_harabasz_score,
     davies_bouldin_score,
 )
+from middleware.response_handler_middleware import error_response, success_response
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from wordcloud import WordCloud
+from constants.response_constants import EMPTY_FEEDBACK_LIST
 
 
 class KClusteringService:
@@ -77,95 +79,54 @@ class KClusteringService:
         import base64
         import matplotlib.pyplot as plt
         import seaborn as sns
-        from wordcloud import WordCloud
 
         sns.set_theme()  # Set seaborn theme for the plot
 
-        # Create a figure with multiple subplots
+        # Create a figure with multiple subplots (adjusted layout)
         fig, axes = plt.subplots(2, 2, figsize=(12, 10))
         fig.suptitle(
             "Clustering Analysis Visualization", fontsize=16, fontweight="bold"
         )
 
-        # 1. Cluster Size Distribution
+        # 1. Pie chart of cluster distribution (Left side)
         cluster_sizes = [sum(labels == i) for i in range(optimal_k)]
-        axes[0, 0].bar(
-            range(optimal_k), cluster_sizes, color="skyblue", edgecolor="navy"
-        )
-        axes[0, 0].set_title("Cluster Size Distribution")
-        axes[0, 0].set_xlabel("Cluster Number")
-        axes[0, 0].set_ylabel("Number of Entries")
-
-        # 2. Generate cluster summary for wordcloud
-        cluster_summary = {}
-        for cluster in range(optimal_k):
-            cluster_feedbacks = [
-                feedback
-                for feedback, label in zip(feedback_list, labels)
-                if label == cluster
-            ]
-            cluster_summary[cluster] = {
-                "size": len(cluster_feedbacks),
-                "feedbacks": cluster_feedbacks,
-            }
-
-        # Word Cloud for the largest cluster
-        largest_cluster = max(
-            range(optimal_k), key=lambda i: cluster_summary[i]["size"]
-        )
-
-        def create_wordcloud(texts):
-            """Generate a word cloud from a list of texts"""
-            if not texts:
-                return None
-            text = " ".join(texts)
-            wordcloud = WordCloud(
-                width=400,
-                height=300,
-                background_color="white",
-                max_words=100,
-                collocations=False,
-            ).generate(text)
-            return wordcloud
-
-        cluster_texts = cluster_summary[largest_cluster]["feedbacks"]
-        if cluster_texts:
-            wordcloud = create_wordcloud(cluster_texts)
-            if wordcloud:
-                axes[0, 1].imshow(wordcloud, interpolation="bilinear")
-                axes[0, 1].set_title(
-                    f"Word Cloud for Largest Cluster ({largest_cluster})"
-                )
-                axes[0, 1].axis("off")
-
-        # 3. Pie chart of cluster distribution
-        axes[1, 0].pie(
+        axes[0, 0].pie(
             cluster_sizes,
             labels=[f"Cluster {i}" for i in range(optimal_k)],
             autopct="%1.1f%%",
             startangle=90,
             colors=sns.color_palette("pastel", optimal_k),
         )
-        axes[1, 0].set_title("Cluster Distribution")
+        axes[0, 0].set_title("Cluster Distribution")
+        axes[0, 0].axis("off")  # Hide axes for the pie chart
 
-        # 4. Brief text info panel
-        axes[1, 1].axis("off")
+        # 2. Cluster Size Distribution (Right side)
+        axes[0, 1].bar(
+            range(optimal_k), cluster_sizes, color="skyblue", edgecolor="navy"
+        )
+        axes[0, 1].set_title("Cluster Size Distribution")
+        axes[0, 1].set_xlabel("Cluster Number")
+        axes[0, 1].set_ylabel("Number of Entries")
+
+        # 3. Brief text info panel (Center of bottom row)
+        axes[1, 0].axis("off")  # Hide axes for the info panel
+        axes[1, 1].axis("off")  # Hide axes for the info panel
         info_text = (
             f"Total Entries: {len(feedback_list)}\n"
             f"Number of Clusters: {optimal_k}\n"
-            f"Largest Cluster: Cluster {largest_cluster} "
-            f"({cluster_summary[largest_cluster]['size']} entries, "
-            f"{(cluster_summary[largest_cluster]['size']/len(feedback_list)*100):.1f}%)\n"
-            f"Smallest Cluster: Cluster {min(range(optimal_k), key=lambda i: cluster_summary[i]['size'])} "
-            f"({min([s['size'] for s in cluster_summary.values()])} entries)"
+            f"Largest Cluster: Cluster {max(range(optimal_k), key=lambda i: cluster_sizes[i])} "
+            f"({max(cluster_sizes)} entries, "
+            f"{(max(cluster_sizes)/len(feedback_list)*100):.1f}%)\n"
+            f"Smallest Cluster: Cluster {min(range(optimal_k), key=lambda i: cluster_sizes[i])} "
+            f"({min(cluster_sizes)} entries)"
         )
-        axes[1, 1].text(
+        axes[1, 0].text(
             0.5,
             0.5,
             info_text,
             horizontalalignment="center",
             verticalalignment="center",
-            transform=axes[1, 1].transAxes,
+            transform=axes[1, 0].transAxes,
             bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.8),
         )
 
@@ -205,11 +166,7 @@ class KClusteringService:
             dict: Detailed clustering results
         """
         if not feedback_list:
-            return {
-                "error": "No feedback provided for clustering",
-                "optimal_clusters": 0,
-                "labels": [],
-            }
+            return error_response(EMPTY_FEEDBACK_LIST)
 
         # Dynamic parameters based on dataset size
         n_samples = len(feedback_list)

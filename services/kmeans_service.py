@@ -351,8 +351,6 @@ class KClusteringService:
 
             # Detailed console output
             print("\n" + "=" * 50)
-            print("🔍 COMPREHENSIVE CLUSTERING ANALYSIS 🔍".center(50))
-            print("=" * 50)
 
             print("\n📊 CLUSTERING METRICS:")
             print(f"• Optimal Number of Clusters: {optimal_k}")

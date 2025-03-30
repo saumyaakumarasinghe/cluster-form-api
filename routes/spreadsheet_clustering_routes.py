@@ -21,12 +21,13 @@ class Cluster(Resource):
         print(f"Request body: {data}")
 
         link = data.get("link")
+        column = data.get("column")
         spreadsheet_service = SpreadsheetService()
         clustering_service = KClusteringService()
         data_prep_service = DataPreparationService()
 
         response, status_code = cluster_spreadsheet(
-            link, spreadsheet_service, clustering_service, data_prep_service
+            link, column, spreadsheet_service, clustering_service, data_prep_service
         )
 
         return response, status_code

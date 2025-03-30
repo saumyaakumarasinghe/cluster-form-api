@@ -1,54 +1,54 @@
 from middleware.response_handler_middleware import error_response, success_response
 from constants.response_constants import EMPTY_LINK, INVALID_LINK, DATA_NOT_FOUND
-from constants.link_constants import SPREADSHEET_RANGE
+
 from services.spreadsheet_services import SpreadsheetService
 from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
 import numpy as np
-import os
 
 
 def cluster_spreadsheet(
     link: str,
+    column: str,
     spreadsheet_service: SpreadsheetService,
     kclustering_service: KClusteringService,
     data_prep_service: DataPreparationService,
 ):
     try:
-        # validate the link
+        # Validate the link
         if not link:
             return error_response(EMPTY_LINK)
 
         if "http" not in link:
             return error_response(INVALID_LINK)
 
-        # extract the spreadsheet ID
+        # Extract the spreadsheet ID
         spreadsheet_id = spreadsheet_service.extract_spreadsheet_id(link)
         if spreadsheet_id is None:
             return error_response(INVALID_LINK)
 
         try:
-            # fetch data with flexible range handling
+            # Fetch data with flexible range handling
             spreadsheet_data = spreadsheet_service.fetch_spreadsheet_data(
-                spreadsheet_id, SPREADSHEET_RANGE
+                spreadsheet_id, column + ":" + column
             )
             if not spreadsheet_data:
                 return error_response(DATA_NOT_FOUND)
 
-            # convert to dataFrame
+            # Convert to DataFrame
             df = spreadsheet_service.convert_to_dataframe(
-                spreadsheet_data, SPREADSHEET_RANGE
+                spreadsheet_data, column + ":" + column
             )
 
-            # get the actual column name or index we're working with
+            # Get the actual column name or index we're working with
             target_column = df.columns[0] if len(df.columns) > 0 else "Value"
 
-            # prepare data using the correct column
+            # Prepare data using the correct column
             prepared_df, data_quality_metrics = (
                 data_prep_service.prepare_column_for_clustering(df, target_column)
             )
 
-            # convert the column to a list before passing to clustering service
+            # Convert the column to a list before passing to clustering service
             feedback_list = prepared_df[target_column].tolist()
 
             # Perform clustering
@@ -66,35 +66,31 @@ def cluster_spreadsheet(
                 print(f"Visualization error: {str(viz_error)}")
                 visualization_base64 = None
 
-            # Create a new spreadsheet with the clustering results
+            # Add cluster labels to the existing spreadsheet
             try:
-                # Create a dataframe with the original data and cluster labels
                 result_df = prepared_df.copy()
                 result_df["cluster"] = clustering_results["labels"]
 
-                # Create a results spreadsheet
-                result_spreadsheet_title = (
-                    f"Clustering Results - {os.path.basename(link)}"
-                )
-                result_spreadsheet_id = spreadsheet_service.create_spreadsheet(
-                    result_spreadsheet_title
-                )
-
-                # Write the dataframe to the new spreadsheet
+                # Write the updated dataframe back to the same spreadsheet
                 result_spreadsheet_link = (
                     spreadsheet_service.write_dataframe_to_spreadsheet(
-                        result_spreadsheet_id, result_df
+                        spreadsheet_id, result_df
                     )
                 )
+
+                if not result_spreadsheet_link:
+                    raise Exception(
+                        "Failed to update spreadsheet with clustering results."
+                    )
             except Exception as sheet_error:
-                print(f"Error creating results spreadsheet: {str(sheet_error)}")
-                result_spreadsheet_link = None
+                print(f"Error updating spreadsheet: {str(sheet_error)}")
+                return error_response(f"Error updating spreadsheet: {str(sheet_error)}")
 
             # Prepare the response with only what's needed for the frontend
             response_data = {
                 "message": "Clustering operation completed successfully.",
                 "optimal_clusters": int(clustering_results["optimal_clusters"]),
-                "result_spreadsheet_link": result_spreadsheet_link,
+                "link": result_spreadsheet_link,
             }
 
             # Add visualization if available
@@ -107,7 +103,7 @@ def cluster_spreadsheet(
             print(
                 f"Clustering completed with {response_data['optimal_clusters']} clusters"
             )
-            print(f"Results spreadsheet: {response_data['result_spreadsheet_link']}")
+            print(f"Results spreadsheet: {response_data['link']}")
 
             return success_response(response_data)
 

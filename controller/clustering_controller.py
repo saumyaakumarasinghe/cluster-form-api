@@ -54,10 +54,11 @@ def cluster_form(
             prepared_df = data_prep_service.prepare_column_for_clustering(
                 df, target_column
             )
+            prepared_df = prepared_df.iloc[1:].reset_index(drop=True) # Remove the first element
 
             # Convert the column to a list before passing to clustering service
             feedback_list = prepared_df[target_column].tolist()
-            # TODO remove 1st elements from the arr
+            print(f"Feedback array length: {len(feedback_list)}")
 
             # Perform clustering
             clustering_results = kclustering_service.advanced_clustering(feedback_list)
@@ -73,6 +74,7 @@ def cluster_form(
             except Exception as viz_error:
                 print(f"Visualization error: {str(viz_error)}")
                 visualization_base64 = None
+            print(f"Feedback array length: {len(feedback_list)}")
 
             # Add cluster labels to the existing spreadsheet
             try:

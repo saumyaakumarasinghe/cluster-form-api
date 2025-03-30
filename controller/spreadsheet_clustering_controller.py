@@ -1,9 +1,14 @@
 from middleware.response_handler_middleware import error_response, success_response
-from constants.response_constants import EMPTY_LINK, INVALID_LINK, DATA_NOT_FOUND
+from constants.response_constants import (
+    INVALID_LINK,
+    DATA_NOT_FOUND,
+    INVALID_REQUEST_BODY_PROPERTIES,
+)
 
 from services.spreadsheet_services import SpreadsheetService
 from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
+from services.image_service import ImageService
 import numpy as np
 
 
@@ -13,11 +18,12 @@ def cluster_spreadsheet(
     spreadsheet_service: SpreadsheetService,
     kclustering_service: KClusteringService,
     data_prep_service: DataPreparationService,
+    image_service: ImageService,
 ):
     try:
-        # Validate the link
-        if not link:
-            return error_response(EMPTY_LINK)
+        # Validate the request body properties
+        if not link or not column:
+            return error_response(INVALID_REQUEST_BODY_PROPERTIES)
 
         if "http" not in link:
             return error_response(INVALID_LINK)
@@ -26,8 +32,10 @@ def cluster_spreadsheet(
         spreadsheet_id = spreadsheet_service.extract_spreadsheet_id(link)
         if spreadsheet_id is None:
             return error_response(INVALID_LINK)
+        print(f"Spreadsheet ID: {spreadsheet_id}")
 
         try:
+            print(f"Spreadsheet range: {column + ':' + column}")
             # Fetch data with flexible range handling
             spreadsheet_data = spreadsheet_service.fetch_spreadsheet_data(
                 spreadsheet_id, column + ":" + column
@@ -44,12 +52,13 @@ def cluster_spreadsheet(
             target_column = df.columns[0] if len(df.columns) > 0 else "Value"
 
             # Prepare data using the correct column
-            prepared_df, data_quality_metrics = (
-                data_prep_service.prepare_column_for_clustering(df, target_column)
+            prepared_df = data_prep_service.prepare_column_for_clustering(
+                df, target_column
             )
 
             # Convert the column to a list before passing to clustering service
             feedback_list = prepared_df[target_column].tolist()
+            print(f"Feedback list: {feedback_list}")
 
             # Perform clustering
             clustering_results = kclustering_service.advanced_clustering(feedback_list)

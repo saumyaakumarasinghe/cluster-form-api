@@ -4,6 +4,7 @@ from controller.spreadsheet_clustering_controller import cluster_spreadsheet
 from services.spreadsheet_services import SpreadsheetService
 from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
+from services.image_service import ImageService
 
 
 api = Namespace("spreadsheet", description="Spreadsheet operations")
@@ -25,9 +26,15 @@ class Cluster(Resource):
         spreadsheet_service = SpreadsheetService()
         clustering_service = KClusteringService()
         data_prep_service = DataPreparationService()
+        image_service = ImageService()
 
         response, status_code = cluster_spreadsheet(
-            link, column, spreadsheet_service, clustering_service, data_prep_service
+            link,
+            column,
+            spreadsheet_service,
+            clustering_service,
+            data_prep_service,
+            image_service,
         )
 
         return response, status_code

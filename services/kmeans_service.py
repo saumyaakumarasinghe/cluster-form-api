@@ -15,7 +15,6 @@ from sklearn.metrics import (
 from middleware.response_handler_middleware import error_response, success_response
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from wordcloud import WordCloud
 from constants.response_constants import EMPTY_FEEDBACK_LIST
 
 
@@ -82,10 +81,10 @@ class KClusteringService:
 
         sns.set_theme()  # Set seaborn theme for the plot
 
-        # Create a figure with multiple subplots (adjusted layout)
-        fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+        # Create a smaller figure with reduced size
+        fig, axes = plt.subplots(2, 2, figsize=(8, 6))  # Reduced the figsize
         fig.suptitle(
-            "Clustering Analysis Visualization", fontsize=16, fontweight="bold"
+            "Clustering Analysis Visualization", fontsize=12, fontweight="bold"
         )
 
         # 1. Pie chart of cluster distribution (Left side)
@@ -383,14 +382,6 @@ def advanced_clustering_handler(
         )
         results["visualization_base64"] = f"data:image/png;base64,{visualization}"
 
-        # Or for file path
-        # visualization_path = KClusteringService.visualize_clustering_results(
-        #     feedback_list,
-        #     results['labels'],
-        #     results['optimal_clusters'],
-        #     output_format='file'
-        # )
-        # results['visualization_path'] = visualization_path
     except Exception as e:
         results["visualization_error"] = str(e)
 

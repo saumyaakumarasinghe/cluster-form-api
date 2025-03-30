@@ -30,7 +30,7 @@ class SpreadsheetService:
             has_permission, error_message = self._check_permissions(spreadsheet_id)
             if not has_permission:
                 raise PermissionError(f"Permission denied. {error_message}. ")
-            
+
             # get the sheet names
             sheet_metadata = (
                 self.service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
@@ -89,11 +89,123 @@ class SpreadsheetService:
         try:
             # Try to get minimal metadata to check permissions
             self.service.spreadsheets().get(
-                spreadsheetId=spreadsheet_id,
-                fields='spreadsheetId'
+                spreadsheetId=spreadsheet_id, fields="spreadsheetId"
             ).execute()
             return True, ""
         except HttpError as e:
             if e.resp.status == 403:
-                return False, "You need to share the spreadsheet with the service account email or make it public"
+                return (
+                    False,
+                    "You need to share the spreadsheet with the service account email or make it public",
+                )
             return False, str(e)
+
+    def create_spreadsheet(self, title):
+        """
+        Creates a new Google Spreadsheet
+
+        Args:
+            title (str): Title for the new spreadsheet
+
+        Returns:
+            str: ID of the newly created spreadsheet
+        """
+        try:
+            # Create a new spreadsheet
+            spreadsheet_body = {"properties": {"title": title}}
+
+            spreadsheet = (
+                self.service.spreadsheets().create(body=spreadsheet_body).execute()
+            )
+
+            spreadsheet_id = spreadsheet.get("spreadsheetId")
+
+            # Set permissions to anyone with the link can view
+            self.drive_service.permissions().create(
+                fileId=spreadsheet_id, body={"type": "anyone", "role": "reader"}
+            ).execute()
+
+            return spreadsheet_id
+
+        except Exception as e:
+            print(f"Error creating spreadsheet: {str(e)}")
+            raise
+
+    def write_dataframe_to_spreadsheet(self, spreadsheet_id, df):
+        """
+        Writes a pandas DataFrame to a Google Spreadsheet
+
+        Args:
+            spreadsheet_id (str): ID of the spreadsheet
+            df (pandas.DataFrame): DataFrame to write
+
+        Returns:
+            str: Link to the spreadsheet
+        """
+        try:
+            # Convert dataframe to list of lists for sheets API
+            values = [df.columns.tolist()]  # Header row
+            values.extend(df.values.tolist())  # Data rows
+
+            # Determine the range based on dataframe dimensions
+            range_name = f"Sheet1!A1:{chr(64 + len(df.columns))}{len(df) + 1}"
+
+            # Clear any existing data
+            self.service.spreadsheets().values().clear(
+                spreadsheetId=spreadsheet_id, range=range_name
+            ).execute()
+
+            # Write the data
+            self.service.spreadsheets().values().update(
+                spreadsheetId=spreadsheet_id,
+                range="Sheet1!A1",
+                valueInputOption="RAW",
+                body={"values": values},
+            ).execute()
+
+            # Create a summary sheet with clustering information
+            self._create_summary_sheet(spreadsheet_id, df)
+
+            # Return the link to the spreadsheet
+            return f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit"
+
+        except Exception as e:
+            print(f"Error writing to spreadsheet: {str(e)}")
+            raise
+
+    def _create_summary_sheet(self, spreadsheet_id, df):
+        """
+        Creates a summary sheet with cluster information
+
+        Args:
+            spreadsheet_id (str): ID of the spreadsheet
+            df (pandas.DataFrame): DataFrame with cluster results
+        """
+        try:
+            # Create a new sheet for summary
+            request = {"addSheet": {"properties": {"title": "Cluster Summary"}}}
+
+            self.service.spreadsheets().batchUpdate(
+                spreadsheetId=spreadsheet_id, body={"requests": [request]}
+            ).execute()
+
+            # Calculate cluster stats
+            if "cluster" in df.columns:
+                cluster_counts = df["cluster"].value_counts().reset_index()
+                cluster_counts.columns = ["Cluster", "Count"]
+
+                # Convert to values list
+                summary_values = [["Cluster", "Count"]]
+                summary_values.extend(cluster_counts.values.tolist())
+
+                # Write summary data
+                self.service.spreadsheets().values().update(
+                    spreadsheetId=spreadsheet_id,
+                    range="Cluster Summary!A1",
+                    valueInputOption="RAW",
+                    body={"values": summary_values},
+                ).execute()
+
+        except Exception as e:
+            print(f"Error creating summary sheet: {str(e)}")
+            # Don't raise - this is a non-critical feature

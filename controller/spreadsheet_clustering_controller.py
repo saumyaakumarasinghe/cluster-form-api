@@ -2,15 +2,15 @@ from middleware.response_handler_middleware import error_response, success_respo
 from constants.response_constants import EMPTY_LINK, INVALID_LINK, DATA_NOT_FOUND
 from constants.link_constants import SPREADSHEET_RANGE
 from services.spreadsheet_services import SpreadsheetService
-# from services.clustering_services import ClusteringService
 from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
 import numpy as np
+import os
+
 
 def cluster_spreadsheet(
     link: str,
     spreadsheet_service: SpreadsheetService,
-    # clustering_service: ClusteringService,
     kclustering_service: KClusteringService,
     data_prep_service: DataPreparationService,
 ):
@@ -49,36 +49,67 @@ def cluster_spreadsheet(
             )
 
             # convert the column to a list before passing to clustering service
-            print(f"DATA-------: {prepared_df[target_column].tolist()}")
-            print(f"DATA-------: {data_quality_metrics}")
-            clustering_results = kclustering_service.advanced_clustering(
-                prepared_df[target_column].tolist()
+            feedback_list = prepared_df[target_column].tolist()
+
+            # Perform clustering
+            clustering_results = kclustering_service.advanced_clustering(feedback_list)
+
+            # Generate visualization as base64 string
+            try:
+                visualization_base64 = kclustering_service.visualize_clustering_results(
+                    feedback_list,
+                    clustering_results["labels"],
+                    clustering_results["optimal_clusters"],
+                    output_format="base64",
+                )
+            except Exception as viz_error:
+                print(f"Visualization error: {str(viz_error)}")
+                visualization_base64 = None
+
+            # Create a new spreadsheet with the clustering results
+            try:
+                # Create a dataframe with the original data and cluster labels
+                result_df = prepared_df.copy()
+                result_df["cluster"] = clustering_results["labels"]
+
+                # Create a results spreadsheet
+                result_spreadsheet_title = (
+                    f"Clustering Results - {os.path.basename(link)}"
+                )
+                result_spreadsheet_id = spreadsheet_service.create_spreadsheet(
+                    result_spreadsheet_title
+                )
+
+                # Write the dataframe to the new spreadsheet
+                result_spreadsheet_link = (
+                    spreadsheet_service.write_dataframe_to_spreadsheet(
+                        result_spreadsheet_id, result_df
+                    )
+                )
+            except Exception as sheet_error:
+                print(f"Error creating results spreadsheet: {str(sheet_error)}")
+                result_spreadsheet_link = None
+
+            # Prepare the response with only what's needed for the frontend
+            response_data = {
+                "message": "Clustering operation completed successfully.",
+                "optimal_clusters": int(clustering_results["optimal_clusters"]),
+                "result_spreadsheet_link": result_spreadsheet_link,
+            }
+
+            # Add visualization if available
+            if visualization_base64:
+                response_data["visualization"] = (
+                    f"data:image/png;base64,{visualization_base64}"
+                )
+
+            # Include basic metrics for logging/debugging
+            print(
+                f"Clustering completed with {response_data['optimal_clusters']} clusters"
             )
+            print(f"Results spreadsheet: {response_data['result_spreadsheet_link']}")
 
-            print(f"Spreadsheet link: {str(link)}")
-            print(f"Spreadsheet ID: {str(spreadsheet_id)}")
-            print(f"Spreadsheet column: {str(SPREADSHEET_RANGE)}")
-
-            # Convert any numpy.int64 to native Python int for JSON serialization
-            optimal_clusters = int(clustering_results['optimal_clusters']) if isinstance(clustering_results['optimal_clusters'], np.int64) else clustering_results['optimal_clusters']
-            silhouette_score = float(clustering_results['silhouette_score']) if isinstance(clustering_results['silhouette_score'], np.int64) else clustering_results['silhouette_score']
-            calinski_score = float(clustering_results['calinski_score']) if isinstance(clustering_results['calinski_score'], np.int64) else clustering_results['calinski_score']
-            davies_score = float(clustering_results['davies_score']) if isinstance(clustering_results['davies_score'], np.int64) else clustering_results['davies_score']
-
-            # If cluster_summary has numpy.int64 values, convert them as well
-            cluster_summary = {key: [int(item) if isinstance(item, np.int64) else item for item in value] for key, value in clustering_results['cluster_summary'].items()}
-
-            # # Send the clusters in the response
-            # return success_response({
-            #     "message": "Clustering operation completed successfully.",
-            #     "optimal_clusters": optimal_clusters,
-            #     "silhouette_score": silhouette_score,
-            #     "calinski_score": calinski_score,
-            #     "davies_score": davies_score,
-            #     "cluster_summary": cluster_summary,
-            # })
-
-            return success_response({"link": 'https://docs.google.com/spreadsheets/d/1E381M970KJ1h-QfWBwOdiNQOxaRq0HGtAOba-ngwBJE/edit?resourcekey&usp=forms_web_b&urp=linked#gid=1423788549'})
+            return success_response(response_data)
 
         except Exception as e:
             return error_response(f"Error accessing spreadsheet data: {str(e)}")

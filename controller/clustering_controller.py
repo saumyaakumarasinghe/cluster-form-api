@@ -35,7 +35,7 @@ def cluster_form(
 
         try:
             print(f"Spreadsheet range: {column + ':' + column}")
-            # Fetch data with flexible range handling
+            # Fetch data from the spreadsheet
             spreadsheet_data = spreadsheet_service.fetch_spreadsheet_data(
                 spreadsheet_id, column + ":" + column
             )
@@ -126,3 +126,58 @@ def cluster_form(
 
     except Exception as e:
         return error_response(f"Error in clustering process: {str(e)}")
+
+
+def categorizing(
+    spreadsheet_link: str,
+    form_link: str,
+    spreadsheet_service: SpreadsheetService,
+    clustering_service: KClusteringService,
+    data_prep_service: DataPreparationService,
+):
+    try:
+        # Validate the request body properties
+        if not spreadsheet_link:
+            return error_response(INVALID_REQUEST_BODY_PROPERTIES)
+        if "http" not in spreadsheet_link:
+            return error_response(INVALID_LINK)
+
+        # Extract the spreadsheet ID
+        spreadsheet_id = spreadsheet_service.extract_spreadsheet_id(spreadsheet_link)
+        if spreadsheet_id is None:
+            return error_response(INVALID_LINK)
+        print(f"Spreadsheet ID: {spreadsheet_id}")
+
+        # Fetch data from the spreadsheet
+        spreadsheet_data = spreadsheet_service.fetch_spreadsheet_data(
+            spreadsheet_id, "A1:Z"
+        )
+        if not spreadsheet_data:
+            return error_response(DATA_NOT_FOUND)
+
+        # Convert to DataFrame
+        df = spreadsheet_service.convert_to_dataframe(
+            spreadsheet_data, "A1:Z"
+        )
+
+        # Prepare data using the first column (as an example)
+        target_column = df.columns[0] if len(df.columns) > 0 else "Value"
+        prepared_df = data_prep_service.prepare_column_for_clustering(
+            df, target_column
+        )
+        prepared_df = prepared_df.iloc[1:].reset_index(drop=True)
+        feedback_list = prepared_df[target_column].tolist()
+        print(f"Feedback array length: {len(feedback_list)}")
+
+        # Perform clustering
+        clustering_results = clustering_service.advanced_clustering(feedback_list)
+
+        # Prepare the response
+        response_data = {
+            "message": "Clustering operation completed successfully.",
+            "optimal_clusters": int(clustering_results["optimal_clusters"]),
+        }
+        return success_response(response_data)
+
+    except Exception as e:
+        return error_response(f"Error in categorizing process: {str(e)}")

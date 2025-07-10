@@ -107,8 +107,7 @@ An NLP-Based Clustering Solution for Summarizing Google Form Responses
   ```json
   {
     "spreadsheetLink": "<Google Sheet URL>",
-    "formLink": "<Google Form URL, optional>",
-    "accuracyRequired": true
+    "formLink": "<Google Form URL, optional>"
   }
   ```
 - **Response:**
@@ -144,5 +143,11 @@ An NLP-Based Clustering Solution for Summarizing Google Form Responses
 ---
 
 ## Notes
+- Only **KMeans clustering** is used (no DBSCAN).
 - Make sure your Google Sheet is shared with the service account.
 - For large datasets, processing may take a few seconds.
+
+---
+
+## License
+MIT

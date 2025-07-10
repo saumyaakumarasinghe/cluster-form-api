@@ -8,19 +8,19 @@ class ImageService:
         self, base64_string, max_size=(400, 400), target_size_kb=100
     ):
         try:
-            # Check if the base64 string starts with the data URL prefix, and remove it if present
+            # Remove data URL prefix if present
             if base64_string.startswith("data:image"):
-                base64_string = base64_string.split(",")[1]  # Remove prefix
+                base64_string = base64_string.split(",")[1]
 
-            # Decode the base64 string into image data
+            # Decode base64 to image data
             image_data = base64.b64decode(base64_string)
             original_size_kb = len(image_data) / 1024
 
-            # Create a BytesIO stream from the decoded image data
+            # Create image from bytes
             input_buffer = BytesIO(image_data)
             image = Image.open(input_buffer)
 
-            # Convert to RGB if needed (for formats with transparency)
+            # Convert to RGB if needed
             if image.mode in ("RGBA", "LA") or (
                 image.mode == "P" and "transparency" in image.info
             ):
@@ -30,76 +30,61 @@ class ImageService:
                 )
                 image = background
 
-            # Resize if needed - use progressive sizing approach
+            # Resize if needed
             original_width, original_height = image.size
             if original_width > max_size[0] or original_height > max_size[1]:
                 image.thumbnail(max_size, Image.LANCZOS)
 
-            # Enhance sharpness slightly to compensate for any resize blur
+            # Enhance sharpness
             enhancer = ImageEnhance.Sharpness(image)
             image = enhancer.enhance(1.1)
 
-            # Try different formats and qualities to find the best balance
+            # Try different formats and qualities
             best_data = None
             best_size = float("inf")
             best_format = "JPEG"
             best_quality = 85
 
-            # Test JPEG format with different qualities
+            # Test JPEG format
             for quality in [85, 75, 65]:
                 output_buffer = BytesIO()
                 image.save(output_buffer, format="JPEG", quality=quality, optimize=True)
                 output_buffer.seek(0)
-
                 test_data = output_buffer.getvalue()
                 test_size_kb = len(test_data) / 1024
-
                 if test_size_kb < best_size:
                     best_data = test_data
                     best_size = test_size_kb
                     best_quality = quality
                     best_format = "JPEG"
-
-                # If we're already under target size, we can stop
                 if test_size_kb <= target_size_kb:
                     break
 
-            # Test WEBP format as an alternative
+            # Test WEBP format as alternative
             try:
                 for quality in [85, 75, 65]:
                     output_buffer = BytesIO()
                     image.save(output_buffer, format="WEBP", quality=quality)
                     output_buffer.seek(0)
-
                     test_data = output_buffer.getvalue()
                     test_size_kb = len(test_data) / 1024
-
                     if test_size_kb < best_size:
                         best_data = test_data
                         best_size = test_size_kb
                         best_quality = quality
                         best_format = "WEBP"
-
-                    # If we're already under target size, we can stop
                     if test_size_kb <= target_size_kb:
                         break
             except Exception:
-                # WEBP might not be supported, continue with JPEG
-                pass
+                pass  # WEBP might not be supported
 
-            # Re-encode the image to base64
+            # Encode to base64
             compressed_base64 = base64.b64encode(best_data).decode("utf-8")
-
-            # MIME type mapping
             mime_type = "jpeg" if best_format == "JPEG" else "webp"
-
-            # Return the full base64 string with the correct format
             full_base64 = f"data:image/{mime_type};base64,{compressed_base64}"
-
-            # Create a shortened preview for logging
             shortened_base64 = f"{full_base64[:50]}..."
 
-            # Log compression statistics
+            # Log compression stats
             compression_ratio = original_size_kb / best_size if best_size > 0 else 0
             print(
                 f"Image optimized: {image.width}x{image.height}, Format: {best_format}, "

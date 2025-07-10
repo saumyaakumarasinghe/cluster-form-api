@@ -5,7 +5,7 @@ from PIL import Image, ImageEnhance
 
 class ImageService:
     def compressed_image_from_base64(
-        self, base64_string, max_size=(350, 350), target_size_kb=90
+        self, base64_string, max_size=(410, 410), target_size_kb=200
     ):
         try:
             # Remove data URL prefix if present

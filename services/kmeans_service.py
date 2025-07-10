@@ -67,65 +67,39 @@ class KClusteringService:
         import matplotlib.pyplot as plt
         import seaborn as sns
 
-        sns.set_theme()  # Set seaborn theme for the plot
-
-        # Create a smaller figure with reduced size
-        fig, axes = plt.subplots(2, 2, figsize=(8, 6))  # Reduced the figsize
+        sns.set_theme()  # Use a clean theme for plots
+        fig, ax = plt.subplots(1, 1, figsize=(6, 6))  # Single pie chart
         fig.suptitle(
             "Clustering Analysis Visualization", fontsize=24, fontweight="bold"
         )
-
-        # 1. Pie chart of cluster distribution (Left side)
-        cluster_sizes = [sum(labels == i) for i in range(optimal_k)]
-        axes[0, 0].pie(
+        cluster_sizes = [sum(labels == i) for i in range(optimal_k)]  # Count per cluster
+        # Calculate percentages for legend
+        total = sum(cluster_sizes)
+        percentages = [(size / total) * 100 for size in cluster_sizes]
+        wedges, _ = ax.pie(
             cluster_sizes,
-            labels=[f"Cluster {i}" for i in range(optimal_k)],
-            autopct="%1.1f%%",
+            labels=None,  # No labels inside the pie
             startangle=90,
             colors=sns.color_palette("pastel", optimal_k),
-            textprops={"fontweight": "bold"},
         )
-        axes[0, 0].set_title("Cluster Distribution", fontsize=20, fontweight="bold")
-        axes[0, 0].axis("off")  # Hide axes for the pie chart
-
-        # 2. Cluster Size Distribution (Right side)
-        axes[0, 1].bar(
-            range(optimal_k),
-            cluster_sizes,
-            color="skyblue",
-            edgecolor="navy",
-        )
-        axes[0, 1].set_title(
-            "Cluster Size Distribution", fontsize=20, fontweight="bold"
-        )
-        axes[0, 1].set_xlabel("Cluster Number", fontsize=15, fontweight="bold")
-        axes[0, 1].set_ylabel("Number of Entries", fontsize=15, fontweight="bold")
-
-        # 3. Brief text info panel (Center of bottom row)
-        axes[1, 0].axis("off")  # Hide axes for the info panel
-        axes[1, 1].axis("off")  # Hide axes for the info panel
-        info_text = (
-            f"Total Entries: {len(feedback_list)}\n"
-            f"Number of Clusters: {optimal_k}\n"
-            f"Largest Cluster: Cluster {max(range(optimal_k), key=lambda i: cluster_sizes[i])} "
-            f"({max(cluster_sizes)} entries, "
-            f"{(max(cluster_sizes)/len(feedback_list)*100):.1f}%)\n"
-            f"Smallest Cluster: Cluster {min(range(optimal_k), key=lambda i: cluster_sizes[i])} "
-            f"({min(cluster_sizes)} entries)"
-        )
-        axes[1, 0].text(
-            0.5,
-            0.5,
-            info_text,
-            horizontalalignment="center",
-            verticalalignment="center",
-            transform=axes[1, 0].transAxes,
-            bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.8),
-            fontsize=14,
-            fontweight="bold",
-        )
-
+        # Build legend labels with percentages
+        cluster_labels = [f"Cluster {i} ({percentages[i]:.1f}%)" for i in range(optimal_k)]
+        legend = ax.legend(wedges, cluster_labels, title="Clusters", loc="center left", bbox_to_anchor=(1, 0.5), fontsize=14)
+        plt.setp(legend.get_texts(), fontweight="bold")
+        plt.setp(legend.get_title(), fontweight="bold")
+        ax.set_title("Cluster Distribution", fontsize=20, fontweight="bold")
         plt.tight_layout()
+
+        # Add total record count below the pie chart
+        ax.annotate(
+            f"Total Records: {total}",
+            xy=(0.5, -0.08),
+            xycoords="axes fraction",
+            ha="center",
+            va="center",
+            fontsize=16,
+            fontweight="bold"
+        )
 
         # Handle different output formats
         if output_format == "base64":

@@ -103,6 +103,24 @@ def cluster_form(
                 "link": result_spreadsheet_link,
             }
 
+            # Add analytics (total count, per-cluster counts, percentages)
+            import numpy as np
+            labels = clustering_results["labels"]
+            total_records = len(labels)
+            unique, counts = np.unique(labels, return_counts=True)
+            analytics_clusters = []
+            for cluster, count in zip(unique, counts):
+                percentage = (count / total_records) * 100 if total_records > 0 else 0
+                analytics_clusters.append({
+                    "cluster": int(cluster),
+                    "count": int(count),
+                    "percentage": round(percentage, 1)
+                })
+            response_data["analytics"] = {
+                "total_records": total_records,
+                "clusters": analytics_clusters
+            }
+
             # Add visualization if available
             if visualization_base64:
                 try:
@@ -189,6 +207,24 @@ def categorizing(
         response_data = {
             "message": "Clustering operation completed successfully.",
             "optimal_clusters": int(clustering_results["optimal_clusters"]),
+        }
+
+        # Add analytics (total count, per-cluster counts, percentages)
+        import numpy as np
+        labels = clustering_results["labels"]
+        total_records = len(labels)
+        unique, counts = np.unique(labels, return_counts=True)
+        analytics_clusters = []
+        for cluster, count in zip(unique, counts):
+            percentage = (count / total_records) * 100 if total_records > 0 else 0
+            analytics_clusters.append({
+                "cluster": int(cluster),
+                "count": int(count),
+                "percentage": round(percentage, 1)
+            })
+        response_data["analytics"] = {
+            "total_records": total_records,
+            "clusters": analytics_clusters
         }
 
         # Add visualization if available

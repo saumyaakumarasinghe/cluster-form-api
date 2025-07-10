@@ -172,11 +172,40 @@ def categorizing(
         # Perform clustering
         clustering_results = clustering_service.advanced_clustering(feedback_list)
 
+        # Generate visualization as base64 string
+        visualization_base64 = None
+        try:
+            visualization_base64 = clustering_service.visualize_clustering_results(
+                feedback_list,
+                clustering_results["labels"],
+                clustering_results["optimal_clusters"],
+                output_format="base64",
+            )
+        except Exception as viz_error:
+            print(f"Visualization error: {str(viz_error)}")
+            visualization_base64 = None
+
         # Prepare the response
         response_data = {
             "message": "Clustering operation completed successfully.",
             "optimal_clusters": int(clustering_results["optimal_clusters"]),
         }
+
+        # Add visualization if available
+        if visualization_base64:
+            try:
+                image_service = ImageService()
+                print(f"[DEBUG] Raw visualization_base64: {visualization_base64[:100]}...")
+                shortened_base64, full_base64 = image_service.compressed_image_from_base64(visualization_base64)
+                print(f"[DEBUG] Processed full_base64: {full_base64[:100]}...")
+                if full_base64:
+                    response_data["visualization"] = full_base64
+                    print(f"Visualization added. Preview: {shortened_base64}")
+                else:
+                    print("Failed to process visualization image")
+            except Exception as e:
+                print(f"Error adding visualization: {e}")
+
         return success_response(response_data)
 
     except Exception as e:

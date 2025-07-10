@@ -67,24 +67,28 @@ class KClusteringService:
         import matplotlib.pyplot as plt
         import seaborn as sns
 
-        sns.set_theme()  # Use a clean theme for plots
-        fig, axes = plt.subplots(2, 2, figsize=(8, 6))  # 2x2 grid of plots
+        sns.set_theme()  # Set seaborn theme for the plot
+
+        # Create a smaller figure with reduced size
+        fig, axes = plt.subplots(2, 2, figsize=(8, 6))  # Reduced the figsize
         fig.suptitle(
             "Clustering Analysis Visualization", fontsize=24, fontweight="bold"
         )
-        cluster_sizes = [sum(labels == i) for i in range(optimal_k)]  # Count per cluster
-        # Pie chart: distribution of entries across clusters
+
+        # 1. Pie chart of cluster distribution (Left side)
+        cluster_sizes = [sum(labels == i) for i in range(optimal_k)]
         axes[0, 0].pie(
             cluster_sizes,
             labels=[f"Cluster {i}" for i in range(optimal_k)],
-            autopct="%1.1%%",
+            autopct="%1.1f%%",
             startangle=90,
             colors=sns.color_palette("pastel", optimal_k),
             textprops={"fontweight": "bold"},
         )
         axes[0, 0].set_title("Cluster Distribution", fontsize=20, fontweight="bold")
-        axes[0, 0].axis("off")
-        # Bar chart: size of each cluster
+        axes[0, 0].axis("off")  # Hide axes for the pie chart
+
+        # 2. Cluster Size Distribution (Right side)
         axes[0, 1].bar(
             range(optimal_k),
             cluster_sizes,
@@ -96,9 +100,10 @@ class KClusteringService:
         )
         axes[0, 1].set_xlabel("Cluster Number", fontsize=15, fontweight="bold")
         axes[0, 1].set_ylabel("Number of Entries", fontsize=15, fontweight="bold")
-        axes[1, 0].axis("off")
-        axes[1, 1].axis("off")
-        # Info panel: summary statistics
+
+        # 3. Brief text info panel (Center of bottom row)
+        axes[1, 0].axis("off")  # Hide axes for the info panel
+        axes[1, 1].axis("off")  # Hide axes for the info panel
         info_text = (
             f"Total Entries: {len(feedback_list)}\n"
             f"Number of Clusters: {optimal_k}\n"
@@ -119,15 +124,22 @@ class KClusteringService:
             fontsize=14,
             fontweight="bold",
         )
+
         plt.tight_layout()
+
+        # Handle different output formats
         if output_format == "base64":
-            buf = io.BytesIO()  # Save to buffer
+            # Save to a bytes buffer
+            buf = io.BytesIO()
             plt.savefig(buf, format="png", dpi=100)
             buf.seek(0)
-            img_str = base64.b64encode(buf.read()).decode("utf-8")  # Encode as base64
+
+            # Convert to base64 string
+            img_str = base64.b64encode(buf.read()).decode("utf-8")
             plt.close()
             return img_str
-        else:
+
+        else:  # file output
             plt.savefig(output_path, format="png", dpi=100)
             plt.close()
             return output_path

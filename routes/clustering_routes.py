@@ -5,7 +5,7 @@ from flask_restx import Namespace, Resource, fields
 from flask import request
 from controller.clustering_controller import categorizing
 from services.google_services import SpreadsheetService
-from services.clustering_services import ClusteringService
+from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
 
 api = Namespace(
@@ -34,7 +34,7 @@ class Cluster(Resource):
         form_link = data.get("formLink")
 
         spreadsheet_service = SpreadsheetService()
-        clustering_service = ClusteringService()
+        clustering_service = KClusteringService()
         data_prep_service = DataPreparationService()
 
         response, status_code = categorizing(

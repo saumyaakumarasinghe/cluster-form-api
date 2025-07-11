@@ -70,13 +70,15 @@ class KClusteringService:
 
         sns.set_theme()  # Use a clean theme for plots
         fig, ax = plt.subplots(1, 1, figsize=(6, 6))  # Single pie chart
+
+        # Add main title with minimal spacing above
         fig.suptitle(
-            "Clustering Analysis Visualization", fontsize=24, fontweight="bold"
+            "Clustering Analysis Visualization", fontsize=20, fontweight="bold", y=0.98
         )
+
         cluster_sizes = [
             sum(labels == i) for i in range(optimal_k)
         ]  # Count per cluster
-        # Calculate percentages for legend
         total = sum(cluster_sizes)
         percentages = [(size / total) * 100 for size in cluster_sizes]
         wedges, _ = ax.pie(
@@ -85,7 +87,6 @@ class KClusteringService:
             startangle=90,
             colors=sns.color_palette("pastel", optimal_k),
         )
-        # Only use the bottom annotation for silhouette score
         if (
             hasattr(KClusteringService, "last_silhouette_score")
             and KClusteringService.last_silhouette_score is not None
@@ -107,46 +108,29 @@ class KClusteringService:
         )
         plt.setp(legend.get_texts(), fontweight="bold")
         plt.setp(legend.get_title(), fontweight="bold")
-        ax.set_title("Cluster Distribution", fontsize=20, fontweight="bold")
-        plt.tight_layout()
+        ax.set_title("Cluster Distribution", fontsize=18, fontweight="bold", pad=5)
 
-        # Add all metrics below the pie chart
-        y_base = -0.10
-        y_offset = 0.09
-        ax.annotate(
-            f"Total Records: {total}",
-            xy=(0.5, y_base),
-            xycoords="axes fraction",
-            ha="center",
-            va="center",
-            fontsize=18,
-            fontweight="bold",
-        )
-        ax.annotate(
-            f"Optimal Clusters: {optimal_k}",
-            xy=(0.5, y_base - y_offset),
-            xycoords="axes fraction",
-            ha="center",
-            va="center",
-            fontsize=16,
-            fontweight="bold",
-            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=1),
-        )
+        # Remove extra space above and below
+        plt.subplots_adjust(top=0.90, bottom=0.22)
+        plt.tight_layout(rect=[0, 0.13, 1, 0.95])
+
+        # --- Metrics as plain, centered text below the chart ---
+        metrics_lines = [f"Total Records: {total}", f"Optimal Clusters: {optimal_k}"]
         if sil_score is not None:
-            ax.annotate(
-                f"Silhouette Score: {sil_score:.2f}",
-                xy=(0.5, y_base - 2 * y_offset),
-                xycoords="axes fraction",
-                ha="center",
-                va="center",
-                fontsize=16,
-                fontweight="bold",
-                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=1),
-            )
-        # The original code had calinski_score and davies_score, but they are not directly available here.
-        # Assuming they are meant to be passed as arguments or calculated elsewhere if needed.
-        # For now, we'll keep the structure but note the potential issue.
-        # If calinski_score and davies_score were available, they would be added here.
+            metrics_lines.append(f"Silhouette Score: {sil_score:.2f}")
+        metrics_text = "\n".join(metrics_lines)
+        # Place the text below the chart, centered
+        ax.annotate(
+            metrics_text,
+            xy=(0.5, -0.10),
+            xycoords="axes fraction",
+            ha="center",
+            va="center",
+            fontsize=14,
+            fontweight="bold",
+            bbox=None,
+            linespacing=1.4,
+        )
 
         # Handle different output formats
         if output_format == "base64":

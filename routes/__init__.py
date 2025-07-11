@@ -1,5 +1,7 @@
-# This file sets up the main API blueprint and registers all API namespaces for the application.
-# It organizes the API structure and documentation using Flask-RESTX.
+"""
+Routes initialization for the Cluster-Form API.
+Sets up the main API blueprint and registers all API namespaces.
+"""
 
 from flask import Blueprint
 from flask_restx import Api
@@ -13,9 +15,9 @@ api_bp = Blueprint("api", __name__)
 # Create the main API object with metadata for documentation
 api = Api(
     api_bp,
-    title="ClusterForm",
+    title="ClusterForm API",
     version="1.0",
-    description="A REST API build with Flask",
+    description="A REST API for clustering Google Form/Sheet responses using KMeans",
 )
 
 # Register all namespaces each with their own endpoints

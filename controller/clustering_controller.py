@@ -4,7 +4,6 @@ from constants.response_constants import (
     DATA_NOT_FOUND,
     INVALID_REQUEST_BODY_PROPERTIES,
 )
-
 from services.spreadsheet_services import SpreadsheetService
 from services.kmeans_service import KClusteringService
 from services.data_preparation_service import DataPreparationService
@@ -19,6 +18,20 @@ def cluster_form(
     data_prep_service: DataPreparationService,
     image_service: ImageService,
 ):
+    """
+    Cluster a specific column from a Google Spreadsheet using KMeans.
+
+    Args:
+        link (str): Google Spreadsheet URL
+        column (str): Column name or letter to cluster
+        spreadsheet_service (SpreadsheetService): Service for Google Sheets operations
+        kclustering_service (KClusteringService): Service for KMeans clustering
+        data_prep_service (DataPreparationService): Service for data preparation
+        image_service (ImageService): Service for image processing
+
+    Returns:
+        tuple: (response_data, status_code)
+    """
     try:
         # Validate the request body properties
         if not link or not column:
@@ -54,7 +67,9 @@ def cluster_form(
             prepared_df = data_prep_service.prepare_column_for_clustering(
                 df, target_column
             )
-            prepared_df = prepared_df.iloc[1:].reset_index(drop=True) # Remove the first element
+            prepared_df = prepared_df.iloc[1:].reset_index(
+                drop=True
+            )  # Remove the first element
 
             # Convert the column to a list before passing to clustering service
             feedback_list = prepared_df[target_column].tolist()
@@ -105,20 +120,23 @@ def cluster_form(
 
             # Add analytics (total count, per-cluster counts, percentages)
             import numpy as np
+
             labels = clustering_results["labels"]
             total_records = len(labels)
             unique, counts = np.unique(labels, return_counts=True)
             analytics_clusters = []
             for cluster, count in zip(unique, counts):
                 percentage = (count / total_records) * 100 if total_records > 0 else 0
-                analytics_clusters.append({
-                    "cluster": int(cluster),
-                    "count": int(count),
-                    "percentage": round(percentage, 1)
-                })
+                analytics_clusters.append(
+                    {
+                        "cluster": int(cluster),
+                        "count": int(count),
+                        "percentage": round(percentage, 1),
+                    }
+                )
             response_data["analytics"] = {
                 "total_records": total_records,
-                "clusters": analytics_clusters
+                "clusters": analytics_clusters,
             }
 
             # Add visualization if available
@@ -128,9 +146,7 @@ def cluster_form(
                         image_service.compressed_image_from_base64(visualization_base64)
                     )
                     if full_base64:  # Check if the conversion was successful
-                        response_data["visualization"] = (
-                            full_base64  # Use the full base64 string, not shortened
-                        )
+                        response_data["visualization"] = full_base64
                         print(f"Visualization added. Preview: {shortened_base64}")
                     else:
                         print("Failed to process visualization image")
@@ -144,105 +160,3 @@ def cluster_form(
 
     except Exception as e:
         return error_response(f"Error in clustering process: {str(e)}")
-
-
-def categorizing(
-    spreadsheet_link: str,
-    form_link: str,
-    spreadsheet_service: SpreadsheetService,
-    clustering_service: KClusteringService,
-    data_prep_service: DataPreparationService,
-):
-    try:
-        # Validate the request body properties
-        if not spreadsheet_link:
-            return error_response(INVALID_REQUEST_BODY_PROPERTIES)
-        if "http" not in spreadsheet_link:
-            return error_response(INVALID_LINK)
-
-        # Extract the spreadsheet ID
-        spreadsheet_id = spreadsheet_service.extract_spreadsheet_id(spreadsheet_link)
-        if spreadsheet_id is None:
-            return error_response(INVALID_LINK)
-        print(f"Spreadsheet ID: {spreadsheet_id}")
-
-        # Fetch data from the spreadsheet
-        spreadsheet_data = spreadsheet_service.fetch_spreadsheet_data(
-            spreadsheet_id, "A1:Z"
-        )
-        if not spreadsheet_data:
-            return error_response(DATA_NOT_FOUND)
-
-        # Convert to DataFrame
-        df = spreadsheet_service.convert_to_dataframe(
-            spreadsheet_data, "A1:Z"
-        )
-
-        # Prepare data using the first column (as an example)
-        target_column = df.columns[0] if len(df.columns) > 0 else "Value"
-        prepared_df = data_prep_service.prepare_column_for_clustering(
-            df, target_column
-        )
-        prepared_df = prepared_df.iloc[1:].reset_index(drop=True)
-        feedback_list = prepared_df[target_column].tolist()
-        print(f"Feedback array length: {len(feedback_list)}")
-
-        # Perform clustering
-        clustering_results = clustering_service.advanced_clustering(feedback_list)
-
-        # Generate visualization as base64 string
-        visualization_base64 = None
-        try:
-            visualization_base64 = clustering_service.visualize_clustering_results(
-                feedback_list,
-                clustering_results["labels"],
-                clustering_results["optimal_clusters"],
-                output_format="base64",
-            )
-        except Exception as viz_error:
-            print(f"Visualization error: {str(viz_error)}")
-            visualization_base64 = None
-
-        # Prepare the response
-        response_data = {
-            "message": "Clustering operation completed successfully.",
-            "optimal_clusters": int(clustering_results["optimal_clusters"]),
-        }
-
-        # Add analytics (total count, per-cluster counts, percentages)
-        import numpy as np
-        labels = clustering_results["labels"]
-        total_records = len(labels)
-        unique, counts = np.unique(labels, return_counts=True)
-        analytics_clusters = []
-        for cluster, count in zip(unique, counts):
-            percentage = (count / total_records) * 100 if total_records > 0 else 0
-            analytics_clusters.append({
-                "cluster": int(cluster),
-                "count": int(count),
-                "percentage": round(percentage, 1)
-            })
-        response_data["analytics"] = {
-            "total_records": total_records,
-            "clusters": analytics_clusters
-        }
-
-        # Add visualization if available
-        if visualization_base64:
-            try:
-                image_service = ImageService()
-                print(f"[DEBUG] Raw visualization_base64: {visualization_base64[:100]}...")
-                shortened_base64, full_base64 = image_service.compressed_image_from_base64(visualization_base64)
-                print(f"[DEBUG] Processed full_base64: {full_base64[:100]}...")
-                if full_base64:
-                    response_data["visualization"] = full_base64
-                    print(f"Visualization added. Preview: {shortened_base64}")
-                else:
-                    print("Failed to process visualization image")
-            except Exception as e:
-                print(f"Error adding visualization: {e}")
-
-        return success_response(response_data)
-
-    except Exception as e:
-        return error_response(f"Error in categorizing process: {str(e)}")

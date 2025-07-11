@@ -1,12 +1,33 @@
+"""
+Image Service for processing and compressing visualization images.
+Handles base64 encoding/decoding, image compression, and format optimization.
+"""
+
 import base64
 from io import BytesIO
 from PIL import Image, ImageEnhance
 
 
 class ImageService:
+    """
+    Service for processing and optimizing images for web display.
+    Handles base64 encoding, compression, and format conversion.
+    """
+
     def compressed_image_from_base64(
-        self, base64_string, max_size=(410, 410), target_size_kb=200
+        self, base64_string, max_size=(300, 300), target_size_kb=100
     ):
+        """
+        Compress and optimize a base64-encoded image for web display.
+
+        Args:
+            base64_string (str): Base64-encoded image string
+            max_size (tuple): Maximum dimensions (width, height) in pixels
+            target_size_kb (int): Target file size in kilobytes
+
+        Returns:
+            tuple: (shortened_preview, full_base64_string) or (None, None) if failed
+        """
         try:
             # Remove data URL prefix if present
             if base64_string.startswith("data:image"):
@@ -20,7 +41,7 @@ class ImageService:
             input_buffer = BytesIO(image_data)
             image = Image.open(input_buffer)
 
-            # Convert to RGB if needed
+            # Convert to RGB if needed (handle transparency)
             if image.mode in ("RGBA", "LA") or (
                 image.mode == "P" and "transparency" in image.info
             ):
@@ -35,17 +56,17 @@ class ImageService:
             if original_width > max_size[0] or original_height > max_size[1]:
                 image.thumbnail(max_size, Image.LANCZOS)
 
-            # Enhance sharpness
+            # Enhance sharpness slightly
             enhancer = ImageEnhance.Sharpness(image)
             image = enhancer.enhance(1.1)
 
-            # Try different formats and qualities
+            # Try different formats and qualities for optimal compression
             best_data = None
             best_size = float("inf")
             best_format = "JPEG"
             best_quality = 85
 
-            # Test JPEG format
+            # Test JPEG format with different qualities
             for quality in [85, 75, 65]:
                 output_buffer = BytesIO()
                 image.save(output_buffer, format="JPEG", quality=quality, optimize=True)
@@ -60,7 +81,7 @@ class ImageService:
                 if test_size_kb <= target_size_kb:
                     break
 
-            # Test WEBP format as alternative
+            # Test WEBP format as alternative (better compression)
             try:
                 for quality in [85, 75, 65]:
                     output_buffer = BytesIO()

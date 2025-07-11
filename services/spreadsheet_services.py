@@ -13,6 +13,7 @@ class SpreadsheetService:
     Service for interacting with Google Sheets using a service account.
     Handles authentication, data fetching, and writing cluster results back to the sheet.
     """
+
     def __init__(self):
         # Authenticate using service account credentials
         self.creds = service_account.Credentials.from_service_account_file(
@@ -155,15 +156,19 @@ class SpreadsheetService:
                 # Try to add a new sheet; if it exists, clear it
                 try:
                     self.service.spreadsheets().batchUpdate(
-                        spreadsheetId=spreadsheet_id, body={"requests": [{"addSheet": {"properties": {"title": sheet_name}}}]}
+                        spreadsheetId=spreadsheet_id,
+                        body={
+                            "requests": [
+                                {"addSheet": {"properties": {"title": sheet_name}}}
+                            ]
+                        },
                     ).execute()
                 except HttpError as e:
                     if "already exists" not in str(e):
                         raise e
                     # If the sheet exists, clear its contents
                     self.service.spreadsheets().values().clear(
-                        spreadsheetId=spreadsheet_id,
-                        range=f"{sheet_name}!A:Z"
+                        spreadsheetId=spreadsheet_id, range=f"{sheet_name}!A:Z"
                     ).execute()
                 # Write the data to the new or cleared sheet
                 values = [data.columns.tolist()] + data.values.tolist()

@@ -17,6 +17,7 @@ class KClusteringService:
     Service for performing advanced text clustering using KMeans.
     Handles vectorization, dimensionality reduction, cluster analysis, and visualization.
     """
+
     @staticmethod
     def generate_cluster_summary(feedback_list, labels, optimal_k):
         """
@@ -72,7 +73,9 @@ class KClusteringService:
         fig.suptitle(
             "Clustering Analysis Visualization", fontsize=24, fontweight="bold"
         )
-        cluster_sizes = [sum(labels == i) for i in range(optimal_k)]  # Count per cluster
+        cluster_sizes = [
+            sum(labels == i) for i in range(optimal_k)
+        ]  # Count per cluster
         # Calculate percentages for legend
         total = sum(cluster_sizes)
         percentages = [(size / total) * 100 for size in cluster_sizes]
@@ -82,24 +85,68 @@ class KClusteringService:
             startangle=90,
             colors=sns.color_palette("pastel", optimal_k),
         )
+        # Only use the bottom annotation for silhouette score
+        if (
+            hasattr(KClusteringService, "last_silhouette_score")
+            and KClusteringService.last_silhouette_score is not None
+        ):
+            sil_score = KClusteringService.last_silhouette_score
+        else:
+            sil_score = None
         # Build legend labels with percentages
-        cluster_labels = [f"Cluster {i} ({percentages[i]:.1f}%)" for i in range(optimal_k)]
-        legend = ax.legend(wedges, cluster_labels, title="Clusters", loc="center left", bbox_to_anchor=(1, 0.5), fontsize=14)
+        cluster_labels = [
+            f"Cluster {i} ({percentages[i]:.1f}%)" for i in range(optimal_k)
+        ]
+        legend = ax.legend(
+            wedges,
+            cluster_labels,
+            title="Clusters",
+            loc="center left",
+            bbox_to_anchor=(1, 0.5),
+            fontsize=14,
+        )
         plt.setp(legend.get_texts(), fontweight="bold")
         plt.setp(legend.get_title(), fontweight="bold")
         ax.set_title("Cluster Distribution", fontsize=20, fontweight="bold")
         plt.tight_layout()
 
-        # Add total record count below the pie chart
+        # Add all metrics below the pie chart
+        y_base = -0.10
+        y_offset = 0.09
         ax.annotate(
             f"Total Records: {total}",
-            xy=(0.5, -0.08),
+            xy=(0.5, y_base),
+            xycoords="axes fraction",
+            ha="center",
+            va="center",
+            fontsize=18,
+            fontweight="bold",
+        )
+        ax.annotate(
+            f"Optimal Clusters: {optimal_k}",
+            xy=(0.5, y_base - y_offset),
             xycoords="axes fraction",
             ha="center",
             va="center",
             fontsize=16,
-            fontweight="bold"
+            fontweight="bold",
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=1),
         )
+        if sil_score is not None:
+            ax.annotate(
+                f"Silhouette Score: {sil_score:.2f}",
+                xy=(0.5, y_base - 2 * y_offset),
+                xycoords="axes fraction",
+                ha="center",
+                va="center",
+                fontsize=16,
+                fontweight="bold",
+                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", lw=1),
+            )
+        # The original code had calinski_score and davies_score, but they are not directly available here.
+        # Assuming they are meant to be passed as arguments or calculated elsewhere if needed.
+        # For now, we'll keep the structure but note the potential issue.
+        # If calinski_score and davies_score were available, they would be added here.
 
         # Handle different output formats
         if output_format == "base64":
@@ -117,6 +164,24 @@ class KClusteringService:
             plt.savefig(output_path, format="png", dpi=100)
             plt.close()
             return output_path
+
+    @staticmethod
+    def get_top_keywords_per_cluster(vectorizer, X, labels, n_clusters, top_n=5):
+        feature_names = vectorizer.get_feature_names_out()
+        top_keywords = {}
+        for cluster in range(n_clusters):
+            # Get indices of samples in this cluster
+            cluster_indices = np.where(labels == cluster)[0]
+            # Compute mean tf-idf score for each feature in this cluster
+            if len(cluster_indices) == 0:
+                top_keywords[cluster] = []
+                continue
+            mean_tfidf = X[cluster_indices].mean(axis=0)
+            if hasattr(mean_tfidf, "A1"):
+                mean_tfidf = mean_tfidf.A1  # Convert to 1D array if sparse
+            top_indices = mean_tfidf.argsort()[-top_n:][::-1]
+            top_keywords[cluster] = [feature_names[i] for i in top_indices]
+        return top_keywords
 
     @staticmethod
     def advanced_clustering(
@@ -189,6 +254,7 @@ class KClusteringService:
                 n_components = 2
             pca = PCA(n_components=n_components)
             X_reduced = pca.fit_transform(X_scaled)
+
             # Step 4: Find optimal number of clusters
             def find_optimal_clusters(X, max_clusters):
                 max_clusters = min(max_clusters, X.shape[0] - 1, 20)
@@ -230,6 +296,8 @@ class KClusteringService:
                 silhouette_avg = silhouette_score(X_reduced, labels)
             except:
                 silhouette_avg = -1
+            # Store for visualization
+            KClusteringService.last_silhouette_score = silhouette_avg
 
             try:
                 calinski_score = calinski_harabasz_score(X_reduced, labels)
@@ -240,9 +308,14 @@ class KClusteringService:
                 davies_score = davies_bouldin_score(X_reduced, labels)
             except:
                 davies_score = 1
+
             # Generate cluster summary
             cluster_summary = KClusteringService.generate_cluster_summary(
                 feedback_list, labels, optimal_k
+            )
+            # Get top keywords per cluster
+            top_keywords = KClusteringService.get_top_keywords_per_cluster(
+                vectorizer, X, labels, optimal_k, top_n=5
             )
             # Optionally generate visualization (side effect)
             try:
@@ -277,6 +350,7 @@ class KClusteringService:
                 "cluster_summary": cluster_summary,
                 "labels": labels,
                 "feature_importance": feature_importance,
+                "top_keywords": top_keywords,
             }
 
         except Exception as e:

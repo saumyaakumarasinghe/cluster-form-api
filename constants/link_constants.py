@@ -1,9 +1,10 @@
+"""
+Link Constants for Google API configuration.
+Defines service account file path and required API scopes.
+"""
+
 SERVICE_ACCOUNT_FILE = "keys.json"
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-SPREADSHEET_RANGE = "B:B"  # the rage that fetches the spreadsheet
-
-
-# data preprocessing
-# formatting
-
-# extra space, null remove and make all lowercase letters, pandas library
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+]
